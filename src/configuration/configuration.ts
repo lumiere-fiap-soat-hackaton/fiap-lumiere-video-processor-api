@@ -1,4 +1,9 @@
 export interface AppConfig {
+  aws: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+  };
   app: {
     env: string;
     port: number;
@@ -8,9 +13,17 @@ export interface AppConfig {
     endpoint: string;
     region: string;
   };
+  s3: {
+    bucketName: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
+  aws: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+  },
   app: {
     env: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 3000,
@@ -19,6 +32,9 @@ export const configuration = (): AppConfig => ({
   dynamoDb: {
     endpoint: process.env.DYNAMODB_ENDPOINT,
     region: process.env.DYNAMODB_REGION,
+  },
+  s3: {
+    bucketName: process.env.AWS_S3_BUCKET_NAME,
   },
 });
 
