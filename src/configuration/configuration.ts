@@ -8,6 +8,11 @@ export interface AppConfig {
     endpoint: string;
     region: string;
   };
+  aws: {
+    region: string;
+    accessKeyId: string;
+    secretAccessKey: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -19,6 +24,11 @@ export const configuration = (): AppConfig => ({
   dynamoDb: {
     endpoint: process.env.DYNAMODB_ENDPOINT,
     region: process.env.DYNAMODB_REGION,
+  },
+  aws: {
+    region: process.env.AWS_REGION,
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
   },
 });
 
