@@ -9,7 +9,7 @@ async function bootstrap() {
   const configService = app.get(ConfigService);
 
   const config = new DocumentBuilder()
-    .setTitle('FIAP - Video Processor API')
+    .setTitle('FIAP Lumiere - Video Processor API')
     .setDescription('API documentation for the Video Processor application')
     .setVersion('1.0')
     .build();

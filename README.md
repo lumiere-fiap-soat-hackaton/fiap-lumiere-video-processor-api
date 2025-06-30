@@ -1,1 +1,1 @@
-# fiap-video-processor-api
+# fiap-lumiere-video-processor-api
