@@ -9,6 +9,8 @@ export interface IFileStorageService {
     fileName: string;
     expiresIn: number;
   }): Promise<string>;
+
+  fileExists(fileName: string): Promise<boolean>;
 }
 
 export const IFileStorageService = Symbol('IFileStorageService');

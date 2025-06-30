@@ -1,4 +1,4 @@
-import { Inject, Module } from '@nestjs/common';
+import { Module } from '@nestjs/common';
 import { VideoProcessingsController } from '@video-processing/api/controllers/video-processing.controller';
 import { IFileStorageService } from './application/services/file-storage.interface';
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';

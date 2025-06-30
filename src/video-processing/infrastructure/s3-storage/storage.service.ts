@@ -1,6 +1,7 @@
 import { IFileStorageService } from '@app/video-processing/application/services/file-storage.interface';
 import {
   GetObjectCommand,
+  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -10,6 +11,7 @@ import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class S3StorageService implements IFileStorageService {
+  private readonly VIDEO_FOLDER = 'videos';
   private readonly bucketName: string =
     this.configService.get<string>('s3.bucketName');
 
@@ -27,7 +29,7 @@ export class S3StorageService implements IFileStorageService {
 
     const command = new PutObjectCommand({
       Bucket: this.bucketName,
-      Key: fileName,
+      Key: `${this.VIDEO_FOLDER}/${fileName}`,
       ContentType: contentType,
     });
 
@@ -46,7 +48,7 @@ export class S3StorageService implements IFileStorageService {
 
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
-      Key: fileName,
+      Key: `${this.VIDEO_FOLDER}/${fileName}`,
     });
 
     const signedUrl = await getSignedUrl(this.client, command, {
@@ -54,5 +56,21 @@ export class S3StorageService implements IFileStorageService {
     });
 
     return signedUrl;
+  }
+
+  async fileExists(fileName: string): Promise<boolean> {
+    // try {
+    //   await this.client.send(
+    //     new HeadObjectCommand({
+    //       Bucket: this.bucketName,
+    //       Key: `${this.VIDEO_FOLDER}/${params.fileName}`,
+    //     }),
+    //   );
+    //   return true;
+    // } catch (err: unknown) {
+    //   if (err['name'] === 'NotFound') return false;
+    //   throw err;
+    // }
+    return Promise.resolve(true);
   }
 }
