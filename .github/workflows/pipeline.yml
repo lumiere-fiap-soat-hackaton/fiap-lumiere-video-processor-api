@@ -70,7 +70,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
         #Remover, após criação dos testes.
-          if: ${{ false }}
+        if: ${{ false }}
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
 
