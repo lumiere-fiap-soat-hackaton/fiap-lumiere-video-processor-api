@@ -1,9 +1,28 @@
-// Mensagem que vem do S3 (media_events_queue)
+export interface S3EventRecord {
+  eventVersion: string;
+  eventSource: string;
+  awsRegion: string;
+  eventTime: string;
+  eventName: string;
+  s3: {
+    s3SchemaVersion: string;
+    configurationId?: string;
+    bucket: {
+      name: string;
+      ownerIdentity?: {
+        principalId: string;
+      };
+      arn: string;
+    };
+    object: {
+      key: string;
+      size: number;
+      eTag: string;
+      sequencer?: string;
+    };
+  };
+}
+
 export interface MediaEventMessage {
-  eventName: string; // ex: 's3:ObjectCreated:Put'
-  bucketName: string;
-  objectKey: string;
-  objectSize: number;
-  timestamp: string;
-  etag: string;
+  Records: S3EventRecord[];
 }
