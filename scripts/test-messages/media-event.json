@@ -1,0 +1,8 @@
+{
+  "eventName": "s3:ObjectCreated:Put",
+  "bucketName": "lumiere-videos-dev",
+  "objectKey": "uploads/test-video-001.mp4",
+  "objectSize": 15728640,
+  "timestamp": "2025-07-04T20:30:00.000Z",
+  "etag": "d41d8cd98f00b204e9800998ecf8427e"
+}

@@ -5,7 +5,7 @@ import {
   CreateTableCommand,
   ListTablesCommand,
 } from '@aws-sdk/client-dynamodb';
-import { AppModule } from '../app.module';
+import { AppModule } from '../src/app.module';
 
 class DatabaseSetupService {
   private client: DynamoDBClient;
