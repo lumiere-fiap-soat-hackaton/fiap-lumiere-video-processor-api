@@ -13,6 +13,12 @@ export interface AppConfig {
     accessKeyId: string;
     secretAccessKey: string;
   };
+  sqs: {
+    endpoint?: string;
+    mediaEventsQueue: string;
+    mediaProcessQueue: string;
+    mediaResultQueue: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
@@ -29,6 +35,12 @@ export const configuration = (): AppConfig => ({
     region: process.env.AWS_REGION,
     accessKeyId: process.env.AWS_ACCESS_KEY_ID,
     secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+  },
+  sqs: {
+    endpoint: process.env.SQS_ENDPOINT,
+    mediaEventsQueue: process.env.MEDIA_EVENTS_QUEUE,
+    mediaProcessQueue: process.env.MEDIA_PROCESS_QUEUE,
+    mediaResultQueue: process.env.MEDIA_RESULT_QUEUE,
   },
 });
 
