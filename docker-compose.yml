@@ -25,6 +25,24 @@ services:
     networks:
       - video-processor-network
 
+  # ElasticMQ - SQS local mais simples e estável
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: elasticmq-sqs
+    ports:
+      - "9324:9324"  # SQS API
+      - "9325:9325"  # Admin UI
+    volumes:
+      - ./elasticmq.conf:/opt/elasticmq.conf
+    networks:
+      - video-processor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9325/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
 networks:
   video-processor-network:
     driver: bridge
