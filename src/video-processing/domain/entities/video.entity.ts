@@ -1,4 +1,9 @@
-export type VideoStatus = 'pending' | 'processing' | 'completed' | 'failed';
+export enum VideoStatus {
+  PENDING = 'pending',
+  PROCESSING = 'processing',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
 
 export interface Video {
   id: string;
