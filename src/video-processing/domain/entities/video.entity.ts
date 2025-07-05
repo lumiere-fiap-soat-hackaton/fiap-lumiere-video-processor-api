@@ -7,9 +7,11 @@ export enum VideoStatus {
 
 export interface Video {
   id: string;
-  title: string;
+  sourceFileKey: string;
+  sourceFileName: string;
+  resultFileKey?: string;
+  resultFileName?: string;
   description?: string;
-  url: string;
   status: VideoStatus;
   createdAt: Date;
   updatedAt: Date;
