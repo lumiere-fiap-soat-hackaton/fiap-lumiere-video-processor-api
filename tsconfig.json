@@ -24,6 +24,6 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false
   },
-  "include": ["src/**/*.ts"],
+  "include": ["src/**/*.ts", "scripts/setup-dev-db.ts", "scripts/setup-sqs-queues.ts", "scripts/delete-all-queues.ts", "scripts/purge-all-queues.ts"],
   "exclude": ["node_modules", "dist"]
 }
