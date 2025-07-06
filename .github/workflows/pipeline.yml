@@ -16,7 +16,7 @@ permissions:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: lumiere-video-processor
+  ECR_REPOSITORY: fiap-lumiere-video-processor
 
 jobs:
   build-and-test:
@@ -173,13 +173,13 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: lumiere-video-processor.json 
-          container-name: lumiere-video-processor
+          container-name: fiap-lumiere-api-service
           image: ${{ steps.build-image.outputs.image }}    
         
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: lumiere-video-processor-service
+          service: fiap-lumiere-api-service
           cluster: DevCluster
           wait-for-service-stability: true
