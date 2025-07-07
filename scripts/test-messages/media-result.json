@@ -1,5 +1,5 @@
 {
     "request_id": "8612093c-ff44-4e0a-8a41-1451ca3f4a35",
     "result_s3_path": "s3://output-bucket/processed/2025-07-07/8612093c-ff44-4e0a-8a41-1451ca3f4a35/video_frames.zip",
-    "status": "NO_FRAMES_EXTRACTED"
+    "status": "SUCCESS"
 }
