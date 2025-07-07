@@ -16,6 +16,7 @@
       "essential": true,
       "portMappings": [
         {
+          "name": "api-port",
           "containerPort": 3000,
           "hostPort": 3000,
           "protocol": "tcp"
