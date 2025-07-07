@@ -1,12 +1,12 @@
-import { IQueryHandler, QueryHandler } from '@nestjs/cqrs';
-import { GetSignedUploadUrlQuery } from './get-signed-upload-url.query';
-import { GetSignedUploadUrlOutput } from './get-signed-upload-url.output';
+import { ICommandHandler, CommandHandler } from '@nestjs/cqrs';
+import { GenerateSignedUploadUrlCommand } from './generate-signed-upload-url.command';
+import { GenerateSignedUploadUrlOutput } from './generate-signed-upload-url.output';
 import { IFileStorageService } from '../../services/file-storage.interface';
 import { Inject } from '@nestjs/common';
 
-@QueryHandler(GetSignedUploadUrlQuery)
-export class GetSignedUploadUrlHandler
-  implements IQueryHandler<GetSignedUploadUrlQuery>
+@CommandHandler(GenerateSignedUploadUrlCommand)
+export class GenerateSignedUploadUrlHandler
+  implements ICommandHandler<GenerateSignedUploadUrlCommand>
 {
   constructor(
     @Inject(IFileStorageService)
@@ -14,9 +14,9 @@ export class GetSignedUploadUrlHandler
   ) {}
 
   async execute(
-    query: GetSignedUploadUrlQuery,
-  ): Promise<GetSignedUploadUrlOutput> {
-    const { files, expiresIn } = query;
+    command: GenerateSignedUploadUrlCommand,
+  ): Promise<GenerateSignedUploadUrlOutput> {
+    const { files, expiresIn } = command;
 
     const signedUrls = await Promise.all(
       files.map((file) =>
@@ -24,7 +24,7 @@ export class GetSignedUploadUrlHandler
       ),
     );
 
-    return new GetSignedUploadUrlOutput(signedUrls);
+    return new GenerateSignedUploadUrlOutput(signedUrls);
   }
 
   private async getSignedUrlObject(

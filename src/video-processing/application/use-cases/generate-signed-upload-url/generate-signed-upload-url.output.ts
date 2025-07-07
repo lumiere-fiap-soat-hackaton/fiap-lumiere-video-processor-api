@@ -5,6 +5,6 @@ export class SignedUploadFileUrl {
   ) {}
 }
 
-export class GetSignedUploadUrlOutput {
+export class GenerateSignedUploadUrlOutput {
   constructor(public readonly signedUrls: SignedUploadFileUrl[]) {}
 }
