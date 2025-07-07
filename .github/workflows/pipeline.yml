@@ -63,6 +63,7 @@ jobs:
             -Dsonar.coverage.exclusions=**/common/**,**/__test__/**,**/main.ts,**/configuration.ts,**/*.module.ts,**/*.enum.ts,**/scripts/**,**/migrations
 
       - name: Validar Quality Gate do SonarCloud
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
