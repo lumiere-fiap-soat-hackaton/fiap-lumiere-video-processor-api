@@ -23,11 +23,7 @@ export class MediaResultsConsumerService
   ) {}
 
   async onModuleInit() {
-    const env = this.configService.get<string>('NODE_ENV');
-
-    if (env !== 'test') {
-      await this.startConsumer();
-    }
+    await this.startConsumer();
   }
 
   onModuleDestroy() {
@@ -36,7 +32,7 @@ export class MediaResultsConsumerService
 
   private async startConsumer() {
     try {
-      const queueKey = 'MEDIA_RESULT_QUEUE';
+      const queueKey = this.configService.get<string>('sqs.mediaResultQueue');
       console.log(
         `🚀 Starting MediaResultsConsumerService for queue: ${queueKey}`,
       );

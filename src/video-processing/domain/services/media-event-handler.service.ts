@@ -58,7 +58,7 @@ export class MediaEventHandler implements MessageHandler<MediaEventMessage> {
 
     // 2. Enviar para fila de processamento
     const processQueueKey = this.configService.get<string>(
-      'MEDIA_PROCESS_QUEUE',
+      'sqs.processQueueKey',
     );
     await this.messagePublisher.publish(processQueueKey, video);
   }
