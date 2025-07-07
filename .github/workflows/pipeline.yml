@@ -53,7 +53,7 @@ jobs:
         run: |
           SCANNER_META_PATH="$(pwd)/.scanner-meta.properties"
           npx sonar-scanner \
-            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda \
+            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api \
             -Dsonar.organization=lumiere-fiap-soat-hackaton \
             -Dsonar.sources=src \
             -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
@@ -71,7 +71,7 @@ jobs:
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
 
-          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda"
+          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api"
           META_PATH="$(pwd)/.scanner-meta.properties"
 
           TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
