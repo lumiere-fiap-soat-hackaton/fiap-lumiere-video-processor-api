@@ -37,7 +37,7 @@ export class VideoController {
   @ApiOperation({
     summary: 'Gera URL assinada para download de vídeo',
   })
-  async getDownloadUrl(@Body() { fileName }: GetSignedDownloadUrlRequest[]) {
+  async getDownloadUrl(@Body() { fileName }: GetSignedDownloadUrlRequest) {
     const query = new GetSignedDownloadUrlQuery(
       fileName,
       VideoController.DEFAULT_URL_EXPIRATION_SECONDS,
