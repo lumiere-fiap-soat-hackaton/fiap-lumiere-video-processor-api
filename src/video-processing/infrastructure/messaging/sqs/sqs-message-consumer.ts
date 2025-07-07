@@ -36,7 +36,7 @@ export class SqsMessageConsumer implements MessageConsumer {
     const fullQueueName = this.configService.get<string>(queueName);
     const queueUrl = `${baseUrl}/queue/${fullQueueName}`;
 
-    console.log(`🚀 Starting to consume messages from: ${queueUrl}`);
+    console.log(`Starting to consume messages from: ${queueUrl}`);
 
     // Loop infinito para polling
     while (this.isRunning) {
@@ -50,7 +50,7 @@ export class SqsMessageConsumer implements MessageConsumer {
   }
 
   stopConsuming(): void {
-    console.log('🛑 Stopping message consumer...');
+    console.log('Stopping message consumer...');
     this.isRunning = false;
   }
 
@@ -92,10 +92,10 @@ export class SqsMessageConsumer implements MessageConsumer {
       await handler.handle(message);
       await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle);
 
-      console.log(`✅ Message processed successfully: ${message.id}`);
+      console.log(`Message processed successfully: ${message.id}`);
     } catch (error) {
       console.error(
-        `❌ Failed to process message ${sqsMessage.MessageId}:`,
+        `Failed to process message ${sqsMessage.MessageId}:`,
         error,
       );
     }
