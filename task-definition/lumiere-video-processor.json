@@ -10,7 +10,7 @@
   "taskRoleArn": "arn:aws:iam::904106077871:role/LabRole",
   "containerDefinitions": [
     {
-      "name": "lumiere-video-processor",
+      "name": "fiap-lumiere-api-container",
       "cpu": 256,
       "memory": 512,
       "essential": true,
