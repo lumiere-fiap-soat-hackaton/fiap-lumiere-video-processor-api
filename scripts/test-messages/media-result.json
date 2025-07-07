@@ -1,14 +1,5 @@
 {
-  "videoId": "test-video-123",
-  "action": "process",
-  "status": "success",
-  "result": {
-    "processedUrl": "https://lumiere-videos-dev.s3.amazonaws.com/processed/test-video-001-720p.mp4",
-    "thumbnailUrl": "https://lumiere-videos-dev.s3.amazonaws.com/thumbnails/test-video-001-thumb.jpg",
-    "duration": 120,
-    "resolution": "1280x720",
-    "format": "mp4"
-  },
-  "timestamp": "2025-07-04T20:35:00.000Z",
-  "correlationId": "test-video-123-1735851300000"
+    "request_id": "8612093c-ff44-4e0a-8a41-1451ca3f4a35",
+    "result_s3_path": "s3://output-bucket/processed/2025-07-07/8612093c-ff44-4e0a-8a41-1451ca3f4a35/video_frames.zip",
+    "status": "NO_FRAMES_EXTRACTED"
 }
