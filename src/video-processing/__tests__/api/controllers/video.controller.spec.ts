@@ -7,7 +7,7 @@ import { GetSignedUploadUrlOutput } from '@app/video-processing/application/use-
 import { GetSignedDownloadUrlOutput } from '@app/video-processing/application/use-cases/get-signed-download-url/get-signed-download-url.output';
 import { mock, MockProxy } from 'jest-mock-extended';
 
-describe('VideoController', () => {
+describe('VideoController - BDD Tests', () => {
   let controller: VideoController;
   let queryBus: MockProxy<QueryBus>;
 
@@ -27,268 +27,222 @@ describe('VideoController', () => {
     controller = module.get<VideoController>(VideoController);
   });
 
-  describe('generateSignedUploadUrl', () => {
-    it('should generate signed upload URLs for single file successfully', async () => {
-      // Arrange
-      const requestFiles: GetSignedUploadUrlRequest[] = [
-        {
-          fileName: 'test-video.mp4',
-          contentType: 'video/mp4',
-        },
-      ];
+  describe('Given a user wants to upload video files', () => {
+    describe('When requesting signed upload URLs for a single file', () => {
+      it('Then should return a valid signed upload URL', async () => {
+        // Given
+        const requestFiles: GetSignedUploadUrlRequest[] = [
+          {
+            fileName: 'test-video.mp4',
+            contentType: 'video/mp4',
+          },
+        ];
 
-      const expectedOutput = new GetSignedUploadUrlOutput([
-        {
-          fileName: 'test-video.mp4',
-          signedUrl:
-            'https://s3.amazonaws.com/bucket/test-video.mp4?signature=test',
-        },
-      ]);
+        const expectedOutput = new GetSignedUploadUrlOutput([
+          {
+            fileName: 'test-video.mp4',
+            signedUrl:
+              'https://s3.amazonaws.com/bucket/test-video.mp4?signature=test',
+          },
+        ]);
 
-      queryBus.execute.mockResolvedValue(expectedOutput);
+        queryBus.execute.mockResolvedValue(expectedOutput);
 
-      // Act
-      const result = await controller.generateSignedUploadUrl(requestFiles);
+        // When
+        const result = await controller.generateSignedUploadUrl(requestFiles);
 
-      // Assert
-      expect(result).toEqual(expectedOutput.signedUrls);
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          files: requestFiles,
-          expiresIn: 300, // DEFAULT_URL_EXPIRATION_SECONDS
-        }),
-      );
-      expect(queryBus.execute).toHaveBeenCalledTimes(1);
+        // Then
+        expect(result).toEqual(expectedOutput.signedUrls);
+        expect(queryBus.execute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            files: requestFiles,
+            expiresIn: 300,
+          }),
+        );
+        expect(queryBus.execute).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('should generate signed upload URLs for multiple files successfully', async () => {
-      // Arrange
-      const requestFiles: GetSignedUploadUrlRequest[] = [
-        {
-          fileName: 'video1.mp4',
-          contentType: 'video/mp4',
-        },
-        {
-          fileName: 'video2.mov',
-          contentType: 'video/quicktime',
-        },
-        {
-          fileName: 'video3.avi',
-          contentType: 'video/x-msvideo',
-        },
-      ];
+    describe('When requesting signed upload URLs for multiple files', () => {
+      it('Then should return valid signed upload URLs for all files', async () => {
+        // Given
+        const requestFiles: GetSignedUploadUrlRequest[] = [
+          {
+            fileName: 'video1.mp4',
+            contentType: 'video/mp4',
+          },
+          {
+            fileName: 'video2.mov',
+            contentType: 'video/quicktime',
+          },
+          {
+            fileName: 'video3.avi',
+            contentType: 'video/x-msvideo',
+          },
+        ];
 
-      const expectedOutput = new GetSignedUploadUrlOutput([
-        {
-          fileName: 'video1.mp4',
-          signedUrl:
-            'https://s3.amazonaws.com/bucket/video1.mp4?signature=test1',
-        },
-        {
-          fileName: 'video2.mov',
-          signedUrl:
-            'https://s3.amazonaws.com/bucket/video2.mov?signature=test2',
-        },
-        {
-          fileName: 'video3.avi',
-          signedUrl:
-            'https://s3.amazonaws.com/bucket/video3.avi?signature=test3',
-        },
-      ]);
+        const expectedOutput = new GetSignedUploadUrlOutput([
+          {
+            fileName: 'video1.mp4',
+            signedUrl:
+              'https://s3.amazonaws.com/bucket/video1.mp4?signature=test1',
+          },
+          {
+            fileName: 'video2.mov',
+            signedUrl:
+              'https://s3.amazonaws.com/bucket/video2.mov?signature=test2',
+          },
+          {
+            fileName: 'video3.avi',
+            signedUrl:
+              'https://s3.amazonaws.com/bucket/video3.avi?signature=test3',
+          },
+        ]);
 
-      queryBus.execute.mockResolvedValue(expectedOutput);
+        queryBus.execute.mockResolvedValue(expectedOutput);
 
-      // Act
-      const result = await controller.generateSignedUploadUrl(requestFiles);
+        // When
+        const result = await controller.generateSignedUploadUrl(requestFiles);
 
-      // Assert
-      expect(result).toEqual(expectedOutput.signedUrls);
-      expect(result).toHaveLength(3);
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          files: requestFiles,
-          expiresIn: 300,
-        }),
-      );
+        // Then
+        expect(result).toEqual(expectedOutput.signedUrls);
+        expect(queryBus.execute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            files: requestFiles,
+            expiresIn: 300,
+          }),
+        );
+        expect(queryBus.execute).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('should handle empty files array', async () => {
-      // Arrange
-      const requestFiles: GetSignedUploadUrlRequest[] = [];
-      const expectedOutput = new GetSignedUploadUrlOutput([]);
+    describe('When requesting upload URLs for an empty file list', () => {
+      it('Then should return an empty result', async () => {
+        // Given
+        const requestFiles: GetSignedUploadUrlRequest[] = [];
+        const expectedOutput = new GetSignedUploadUrlOutput([]);
 
-      queryBus.execute.mockResolvedValue(expectedOutput);
+        queryBus.execute.mockResolvedValue(expectedOutput);
 
-      // Act
-      const result = await controller.generateSignedUploadUrl(requestFiles);
+        // When
+        const result = await controller.generateSignedUploadUrl(requestFiles);
 
-      // Assert
-      expect(result).toEqual([]);
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          files: [],
-          expiresIn: 300,
-        }),
-      );
-    });
-
-    it('should handle query bus errors', async () => {
-      // Arrange
-      const requestFiles: GetSignedUploadUrlRequest[] = [
-        {
-          fileName: 'test-video.mp4',
-          contentType: 'video/mp4',
-        },
-      ];
-
-      const error = new Error('Query bus execution failed');
-      queryBus.execute.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(
-        controller.generateSignedUploadUrl(requestFiles),
-      ).rejects.toThrow('Query bus execution failed');
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          files: requestFiles,
-          expiresIn: 300,
-        }),
-      );
-    });
-
-    it('should use default expiration time', async () => {
-      // Arrange
-      const requestFiles: GetSignedUploadUrlRequest[] = [
-        {
-          fileName: 'test-video.mp4',
-          contentType: 'video/mp4',
-        },
-      ];
-
-      const expectedOutput = new GetSignedUploadUrlOutput([
-        {
-          fileName: 'test-video.mp4',
-          signedUrl:
-            'https://s3.amazonaws.com/bucket/test-video.mp4?signature=test',
-        },
-      ]);
-
-      queryBus.execute.mockResolvedValue(expectedOutput);
-
-      // Act
-      await controller.generateSignedUploadUrl(requestFiles);
-
-      // Assert
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          expiresIn: 300, // DEFAULT_URL_EXPIRATION_SECONDS
-        }),
-      );
+        // Then
+        expect(result).toEqual([]);
+        expect(queryBus.execute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            files: [],
+            expiresIn: 300,
+          }),
+        );
+      });
     });
   });
 
-  describe('getDownloadUrl', () => {
-    it('should generate signed download URL successfully', async () => {
-      // Arrange
-      const request: GetSignedDownloadUrlRequest = {
-        fileName: 'test-video.mp4',
-      };
+  describe('Given the upload URL generation encounters errors', () => {
+    describe('When the query bus throws an error', () => {
+      it('Then should propagate the error to the caller', async () => {
+        // Given
+        const requestFiles: GetSignedUploadUrlRequest[] = [
+          {
+            fileName: 'test-video.mp4',
+            contentType: 'video/mp4',
+          },
+        ];
+        const error = new Error('Upload service error');
 
-      const expectedOutput = new GetSignedDownloadUrlOutput(
-        'https://s3.amazonaws.com/bucket/test-video.mp4?signature=download-test',
-      );
+        queryBus.execute.mockRejectedValue(error);
 
-      queryBus.execute.mockResolvedValue(expectedOutput);
+        // When & Then
+        await expect(
+          controller.generateSignedUploadUrl(requestFiles),
+        ).rejects.toThrow('Upload service error');
+      });
+    });
+  });
 
-      // Act
-      const result = await controller.getDownloadUrl(request);
+  describe('Given a user wants to download a video file', () => {
+    describe('When requesting a signed download URL with valid parameters', () => {
+      it('Then should return a valid signed download URL', async () => {
+        // Given
+        const request: GetSignedDownloadUrlRequest = {
+          fileName: 'demo-video.mp4',
+        };
 
-      // Assert
-      expect(result).toBe(expectedOutput.signedUrl);
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          fileName: 'test-video.mp4',
-          expiresIn: 300,
-        }),
-      );
-      expect(queryBus.execute).toHaveBeenCalledTimes(1);
+        const expectedOutput = new GetSignedDownloadUrlOutput(
+          'https://s3.amazonaws.com/bucket/demo-video.mp4?X-Amz-Signature=test',
+        );
+
+        queryBus.execute.mockResolvedValue(expectedOutput);
+
+        // When
+        const result = await controller.getDownloadUrl(request);
+
+        // Then
+        expect(result).toBe(expectedOutput.signedUrl);
+        expect(queryBus.execute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            fileName: 'demo-video.mp4',
+            expiresIn: 300,
+          }),
+        );
+        expect(queryBus.execute).toHaveBeenCalledTimes(1);
+      });
     });
 
-    it('should handle query bus errors for download URL', async () => {
-      // Arrange
-      const request: GetSignedDownloadUrlRequest = {
-        fileName: 'test-video.mp4',
-      };
-
-      const error = new Error('Download URL generation failed');
-      queryBus.execute.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(controller.getDownloadUrl(request)).rejects.toThrow(
-        'Download URL generation failed',
-      );
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          fileName: 'test-video.mp4',
-          expiresIn: 300,
-        }),
-      );
-    });
-
-    it('should use default expiration time for download URL', async () => {
-      // Arrange
-      const request: GetSignedDownloadUrlRequest = {
-        fileName: 'long-video.mov',
-      };
-
-      const expectedOutput = new GetSignedDownloadUrlOutput(
-        'https://s3.amazonaws.com/bucket/long-video.mov?signature=download-test',
-      );
-
-      queryBus.execute.mockResolvedValue(expectedOutput);
-
-      // Act
-      await controller.getDownloadUrl(request);
-
-      // Assert
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
-          fileName: 'long-video.mov',
-          expiresIn: 300, // DEFAULT_URL_EXPIRATION_SECONDS
-        }),
-      );
-    });
-
-    it('should handle different file types for download URL', async () => {
-      // Arrange
-      const request: GetSignedDownloadUrlRequest = {
-        fileName: 'presentation.avi',
-      };
-
-      const expectedOutput = new GetSignedDownloadUrlOutput(
-        'https://s3.amazonaws.com/bucket/presentation.avi?signature=download-test',
-      );
-
-      queryBus.execute.mockResolvedValue(expectedOutput);
-
-      // Act
-      const result = await controller.getDownloadUrl(request);
-
-      // Assert
-      expect(result).toBe(expectedOutput.signedUrl);
-      expect(queryBus.execute).toHaveBeenCalledWith(
-        expect.objectContaining({
+    describe('When requesting download URL for different file types', () => {
+      it('Then should handle various video file extensions correctly', async () => {
+        // Given
+        const request: GetSignedDownloadUrlRequest = {
           fileName: 'presentation.avi',
-          expiresIn: 300,
-        }),
-      );
+        };
+
+        const expectedOutput = new GetSignedDownloadUrlOutput(
+          'https://s3.amazonaws.com/bucket/presentation.avi?signature=test',
+        );
+
+        queryBus.execute.mockResolvedValue(expectedOutput);
+
+        // When
+        const result = await controller.getDownloadUrl(request);
+
+        // Then
+        expect(result).toBe(expectedOutput.signedUrl);
+        expect(queryBus.execute).toHaveBeenCalledWith(
+          expect.objectContaining({
+            fileName: 'presentation.avi',
+            expiresIn: 300,
+          }),
+        );
+      });
     });
   });
 
-  describe('controller configuration', () => {
-    it('should have correct default expiration time', () => {
-      // Assert
-      expect(VideoController['DEFAULT_URL_EXPIRATION_SECONDS']).toBe(300);
+  describe('Given the download URL generation encounters errors', () => {
+    describe('When the query bus throws an error', () => {
+      it('Then should propagate the error to the caller', async () => {
+        // Given
+        const request: GetSignedDownloadUrlRequest = {
+          fileName: 'missing-video.mp4',
+        };
+        const error = new Error('Download service error');
+
+        queryBus.execute.mockRejectedValue(error);
+
+        // When & Then
+        await expect(controller.getDownloadUrl(request)).rejects.toThrow(
+          'Download service error',
+        );
+      });
+    });
+  });
+
+  describe('Given the controller configuration', () => {
+    describe('When checking default expiration time', () => {
+      it('Then should have correct default expiration time', () => {
+        // Then
+        expect(VideoController['DEFAULT_URL_EXPIRATION_SECONDS']).toBe(300);
+      });
     });
   });
 });

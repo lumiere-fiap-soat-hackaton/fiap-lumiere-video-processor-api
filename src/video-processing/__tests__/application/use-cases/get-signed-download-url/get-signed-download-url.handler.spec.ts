@@ -5,7 +5,7 @@ import { GetSignedDownloadUrlOutput } from '@app/video-processing/application/us
 import { IFileStorageService } from '@app/video-processing/application/services/file-storage.interface';
 import { mock, MockProxy } from 'jest-mock-extended';
 
-describe('GetSignedDownloadUrlHandler', () => {
+describe('GetSignedDownloadUrlHandler - BDD Tests', () => {
   let handler: GetSignedDownloadUrlHandler;
   let fileStorageService: MockProxy<IFileStorageService>;
 
@@ -27,70 +27,82 @@ describe('GetSignedDownloadUrlHandler', () => {
     );
   });
 
-  describe('execute', () => {
-    it('should return signed download URL successfully', async () => {
-      // Arrange
-      const fileName = 'test-video.mp4';
-      const expiresIn = 3600;
-      const expectedSignedUrl =
-        'https://s3.amazonaws.com/bucket/test-video.mp4?X-Amz-Signature=test';
+  describe('Given a user wants to download a video file', () => {
+    describe('When the user requests a download URL with valid parameters', () => {
+      it('Then should return a valid signed download URL', async () => {
+        // Given
+        const fileName = 'test-video.mp4';
+        const expiresIn = 3600;
+        const expectedSignedUrl =
+          'https://s3.amazonaws.com/bucket/test-video.mp4?X-Amz-Signature=test';
 
-      const query = new GetSignedDownloadUrlQuery(fileName, expiresIn);
+        const query = new GetSignedDownloadUrlQuery(fileName, expiresIn);
 
-      fileStorageService.getDownloadSignedUrl.mockResolvedValue(
-        expectedSignedUrl,
-      );
+        fileStorageService.getDownloadSignedUrl.mockResolvedValue(
+          expectedSignedUrl,
+        );
 
-      // Act
-      const result = await handler.execute(query);
+        // When
+        const result = await handler.execute(query);
 
-      // Assert
-      expect(result).toBeInstanceOf(GetSignedDownloadUrlOutput);
-      expect(result.signedUrl).toBe(expectedSignedUrl);
-      expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
-        fileName,
-        expiresIn,
-      });
-      expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledTimes(1);
-    });
-
-    it('should handle service errors properly', async () => {
-      // Arrange
-      const fileName = 'test-video.mp4';
-      const expiresIn = 3600;
-      const query = new GetSignedDownloadUrlQuery(fileName, expiresIn);
-      const error = new Error('S3 service error');
-
-      fileStorageService.getDownloadSignedUrl.mockRejectedValue(error);
-
-      // Act & Assert
-      await expect(handler.execute(query)).rejects.toThrow('S3 service error');
-      expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
-        fileName,
-        expiresIn,
+        // Then
+        expect(result).toBeInstanceOf(GetSignedDownloadUrlOutput);
+        expect(result.signedUrl).toBe(expectedSignedUrl);
+        expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
+          fileName,
+          expiresIn,
+        });
+        expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledTimes(
+          1,
+        );
       });
     });
+  });
 
-    it('should pass correct parameters to file storage service', async () => {
-      // Arrange
-      const fileName = 'another-video.mov';
-      const expiresIn = 7200;
-      const expectedSignedUrl =
-        'https://s3.amazonaws.com/bucket/another-video.mov?signature=test';
+  describe('Given the storage service encounters errors', () => {
+    describe('When storage service fails', () => {
+      it('Then should propagate the error to the caller', async () => {
+        // Given
+        const fileName = 'test-video.mp4';
+        const expiresIn = 3600;
+        const query = new GetSignedDownloadUrlQuery(fileName, expiresIn);
+        const error = new Error('S3 service error');
 
-      const query = new GetSignedDownloadUrlQuery(fileName, expiresIn);
+        fileStorageService.getDownloadSignedUrl.mockRejectedValue(error);
 
-      fileStorageService.getDownloadSignedUrl.mockResolvedValue(
-        expectedSignedUrl,
-      );
+        // When & Then
+        await expect(handler.execute(query)).rejects.toThrow(
+          'S3 service error',
+        );
+        expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
+          fileName,
+          expiresIn,
+        });
+      });
+    });
 
-      // Act
-      await handler.execute(query);
+    describe('When passing different parameters', () => {
+      it('Then should call storage service with correct parameters', async () => {
+        // Given
+        const fileName = 'another-video.mov';
+        const expiresIn = 7200;
+        const expectedSignedUrl =
+          'https://s3.amazonaws.com/bucket/another-video.mov?signature=test';
 
-      // Assert
-      expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
-        fileName: 'another-video.mov',
-        expiresIn: 7200,
+        const query = new GetSignedDownloadUrlQuery(fileName, expiresIn);
+
+        fileStorageService.getDownloadSignedUrl.mockResolvedValue(
+          expectedSignedUrl,
+        );
+
+        // When
+        await handler.execute(query);
+
+        // Then
+        expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
+          fileName: 'another-video.mov',
+          expiresIn: 7200,
+        });
       });
     });
   });
