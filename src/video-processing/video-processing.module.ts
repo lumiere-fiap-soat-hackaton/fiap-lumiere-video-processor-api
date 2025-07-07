@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { VideoProcessingsController } from '@video-processing/api/controllers/video-processing.controller';
+import { VideoController } from '@app/video-processing/api/controllers/video.controller';
 import { IFileStorageService } from './application/services/file-storage.interface';
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';
 import { ConfigService } from '@nestjs/config';
@@ -32,6 +32,6 @@ const useCaseHandlers = [
     },
     ...useCaseHandlers,
   ],
-  controllers: [VideoProcessingsController],
+  controllers: [VideoController],
 })
 export class VideoProcessingModule {}

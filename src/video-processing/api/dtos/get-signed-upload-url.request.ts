@@ -1,4 +1,4 @@
-import { IsString, IsMimeType, Matches, IsNotEmpty } from 'class-validator';
+import { IsString, IsMimeType, IsNotEmpty } from 'class-validator';
 
 export class GetSignedUploadUrlRequest {
   @IsNotEmpty()

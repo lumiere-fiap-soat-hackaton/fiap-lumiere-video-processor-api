@@ -3,7 +3,6 @@ import { GetSignedUploadUrlQuery } from './get-signed-upload-url.query';
 import { GetSignedUploadUrlOutput } from './get-signed-upload-url.output';
 import { IFileStorageService } from '../../services/file-storage.interface';
 import { Inject } from '@nestjs/common';
-import { FileAlreadyExistsException } from '@app/common/exceptions/file-already-exists.exception';
 
 @QueryHandler(GetSignedUploadUrlQuery)
 export class GetSignedUploadUrlHandler
@@ -17,20 +16,28 @@ export class GetSignedUploadUrlHandler
   async execute(
     query: GetSignedUploadUrlQuery,
   ): Promise<GetSignedUploadUrlOutput> {
-    const { fileName, contentType, expiresIn } = query;
+    const { files, expiresIn } = query;
 
-    const fileExists = await this.fileStorageService.fileExists(fileName);
+    const signedUrls = await Promise.all(
+      files.map((file) =>
+        this.getSignedUrlObject(file.fileName, file.contentType, expiresIn),
+      ),
+    );
 
-    if (fileExists) {
-      throw new FileAlreadyExistsException(fileName);
-    }
+    return new GetSignedUploadUrlOutput(signedUrls);
+  }
 
-    const signedUrl = await this.fileStorageService.getUploadSignedUrl({
+  private async getSignedUrlObject(
+    fileName: string,
+    contentType: string,
+    expiresIn: number,
+  ): Promise<{ fileName: string; signedUrl: string }> {
+    const url = await this.fileStorageService.getUploadSignedUrl({
       fileName,
       contentType,
       expiresIn,
     });
 
-    return new GetSignedUploadUrlOutput(signedUrl);
+    return { fileName, signedUrl: url };
   }
 }
