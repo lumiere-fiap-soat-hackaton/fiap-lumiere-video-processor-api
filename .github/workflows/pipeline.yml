@@ -2,8 +2,7 @@ name: Esteira automatizada de Integração e Deploy Contínuo - Construção, Te
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, release/* ]
   pull_request:
     branches:
       - main
@@ -169,8 +168,8 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: lumiere-video-processor.json 
-          container-name: fiap-lumiere-api-container
+          task-definition: task-definition/lumiere-video-processor.json
+          container-name: lumiere-video-processor
           image: ${{ steps.build-image.outputs.image }}    
         
       - name: Deploy Amazon ECS task definition
