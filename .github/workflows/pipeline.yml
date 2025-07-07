@@ -130,7 +130,7 @@ jobs:
     name: Deploy para AWS ECS com Fargate
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
 
     steps:
       - name: Realizar Checkout do código-fonte
