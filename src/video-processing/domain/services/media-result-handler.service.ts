@@ -1,9 +1,12 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import {
   MessageHandler,
   Message,
 } from '../messaging/message-consumer.interface';
-import { MediaResultMessage } from '../messaging/messages/media-result-message';
+import {
+  MediaResultMessage,
+  MediaResultMessageStatus,
+} from '../messaging/messages/media-result-message';
 import {
   VideoRepository,
   VIDEO_REPOSITORY,
@@ -12,22 +15,58 @@ import { VideoStatus } from '../entities/video.entity';
 
 @Injectable()
 export class MediaResultHandler implements MessageHandler<MediaResultMessage> {
+  private readonly logger = new Logger(MediaResultHandler.name);
+
   constructor(
     @Inject(VIDEO_REPOSITORY)
     private readonly videoRepository: VideoRepository,
   ) {}
 
   async handle(message: Message<MediaResultMessage>): Promise<void> {
-    const { videoId, status, result, error } = message.body;
+    const {
+      request_id,
+      status: mediaResultMessagestatus,
+      result_s3_path,
+    } = message.body;
 
-    // Atualizar status e URL do vídeo baseado no resultado
-    const updateData = {
-      status: status === 'success' ? VideoStatus.COMPLETED : VideoStatus.FAILED,
-      ...(result?.processedUrl && { url: result.processedUrl }), // Atualizar URL com versão processada
-      ...(result?.description && { description: result.description }),
-      updatedAt: new Date(),
-    };
+    try {
+      const foundVideo = await this.videoRepository.findById(request_id);
 
-    await this.videoRepository.update(videoId, updateData);
+      // Se o vídeo não foi encontrado, confirma a mensagem para não reprocessar
+      if (!foundVideo) {
+        this.logger.warn(
+          `Video with request_id ${request_id} not found. Message will be acknowledged.`,
+        );
+        return; // Mensagem será confirmada automaticamente
+      }
+
+      const status =
+        mediaResultMessagestatus === MediaResultMessageStatus.SUCCESS
+          ? VideoStatus.COMPLETED
+          : VideoStatus.FAILED;
+
+      const resultFileKey = result_s3_path;
+      const resultFileName = result_s3_path.split('/').pop();
+
+      const updateData = {
+        status,
+        resultFileKey,
+        resultFileName,
+      };
+
+      await this.videoRepository.update(request_id, updateData);
+
+      this.logger.log(
+        `Successfully processed media result for request_id: ${request_id}`,
+      );
+    } catch (error) {
+      this.logger.error(
+        `Failed to process media result for request_id: ${request_id}`,
+        error,
+      );
+
+      // Rejeita a mensagem para que seja reprocessada
+      throw error;
+    }
   }
 }
