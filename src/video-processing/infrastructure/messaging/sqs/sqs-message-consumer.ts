@@ -15,7 +15,7 @@ import { SQS_CLIENT } from './sqs.module';
 
 @Injectable()
 export class SqsMessageConsumer implements MessageConsumer {
-  private isRunning = false;
+  private runningConsumers = new Map<string, boolean>(); // Track multiple consumers
 
   constructor(
     @Inject(SQS_CLIENT)
@@ -27,31 +27,48 @@ export class SqsMessageConsumer implements MessageConsumer {
     queueName: string,
     handler: MessageHandler<T>,
   ): Promise<void> {
-    if (this.isRunning) {
-      throw new Error('Consumer is already running');
+    // Check if THIS specific queue is already being consumed
+    if (this.runningConsumers.get(queueName)) {
+      throw new Error(`Consumer for queue ${queueName} is already running`);
     }
 
-    this.isRunning = true;
+    this.runningConsumers.set(queueName, true);
     const baseUrl = this.configService.get<string>('SQS_ENDPOINT');
     const fullQueueName = this.configService.get<string>(queueName);
     const queueUrl = `${baseUrl}/queue/${fullQueueName}`;
 
     console.log(`Starting to consume messages from: ${queueUrl}`);
 
-    // Loop infinito para polling
-    while (this.isRunning) {
-      try {
-        await this.pollMessages(queueUrl, handler);
-      } catch (error) {
-        console.error('Error polling messages:', error);
-        await this.sleep(5000); // Aguardar antes de tentar novamente
-      }
+    // Start consuming for this specific queue
+    this.consumeQueue(queueUrl, queueName, handler);
+  }
+
+  stopConsuming(queueName?: string): void {
+    if (queueName) {
+      console.log(`Stopping consumer for queue: ${queueName}`);
+      this.runningConsumers.set(queueName, false);
+    } else {
+      console.log('Stopping all consumers...');
+      this.runningConsumers.forEach((_, key) => {
+        this.runningConsumers.set(key, false);
+      });
     }
   }
 
-  stopConsuming(): void {
-    console.log('Stopping message consumer...');
-    this.isRunning = false;
+  private async consumeQueue<T>(
+    queueUrl: string,
+    queueName: string,
+    handler: MessageHandler<T>,
+  ): Promise<void> {
+    // Loop específico para esta fila
+    while (this.runningConsumers.get(queueName)) {
+      try {
+        await this.pollMessages(queueUrl, handler);
+      } catch (error) {
+        console.error(`Error polling messages from ${queueName}:`, error);
+        await this.sleep(5000);
+      }
+    }
   }
 
   private async pollMessages<T>(
@@ -61,7 +78,7 @@ export class SqsMessageConsumer implements MessageConsumer {
     const command = new ReceiveMessageCommand({
       QueueUrl: queueUrl,
       MaxNumberOfMessages: 10,
-      WaitTimeSeconds: 20, // Long polling
+      WaitTimeSeconds: 20,
       VisibilityTimeout: 30,
     });
 
