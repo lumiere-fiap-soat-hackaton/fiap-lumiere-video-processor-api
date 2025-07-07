@@ -15,7 +15,7 @@ permissions:
 
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
-  ECR_REPOSITORY: lumiere-video-processor
+  ECR_REPOSITORY: fiap-lumiere-video-processor
 
 jobs:
   build-and-test:
@@ -41,20 +41,18 @@ jobs:
         run: npm install
 
       - name: Executar testes e gerar cobertura
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: npm run test:cov
 
       - name: Enviar cobertura ao SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: |
           SCANNER_META_PATH="$(pwd)/.scanner-meta.properties"
           npx sonar-scanner \
-            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda \
+            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api \
             -Dsonar.organization=lumiere-fiap-soat-hackaton \
             -Dsonar.sources=src \
             -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
@@ -68,12 +66,11 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
 
-          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda"
+          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api"
           META_PATH="$(pwd)/.scanner-meta.properties"
 
           TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
@@ -179,6 +176,6 @@ jobs:
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
-          service: lumiere-video-processor-service
+          service: fiap-lumiere-api-service
           cluster: DevCluster
           wait-for-service-stability: true
