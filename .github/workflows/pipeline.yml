@@ -42,16 +42,14 @@ jobs:
         run: npm install
 
       - name: Executar testes e gerar cobertura
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: npm run test:cov
 
       - name: Enviar cobertura ao SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: |
           SCANNER_META_PATH="$(pwd)/.scanner-meta.properties"
           npx sonar-scanner \
@@ -69,8 +67,7 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
 
