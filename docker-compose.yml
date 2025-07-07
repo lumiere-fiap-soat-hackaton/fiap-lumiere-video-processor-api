@@ -32,8 +32,6 @@ services:
     ports:
       - "9324:9324"  # SQS API
       - "9325:9325"  # Admin UI
-    volumes:
-      - ./elasticmq.conf:/opt/elasticmq.conf
     networks:
       - video-processor-network
     healthcheck:

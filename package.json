@@ -20,7 +20,7 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     
-    "dev:setup": "npm run docker:up && timeout 5 && npm run dev:sqs:setup && npm run dev:db:setup",
+    "dev:setup": "npm run docker:up && ping 127.0.0.1 -n 6 > nul && npm run dev:sqs:setup && npm run dev:db:setup",
     
     "sqs:list": "aws --endpoint-url=http://localhost:9324 sqs list-queues --region us-east-1",
     
