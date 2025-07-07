@@ -15,18 +15,24 @@ import {
 import { v4 as uuidv4 } from 'uuid';
 import { BaseDynamoDbRepository } from '../database/dynamodb/base-dynamodb.repository';
 import { DYNAMODB_DOCUMENT_CLIENT } from '../database/dynamodb/dynamodb.module';
-import { Video } from '@app/video-processing/domain/entities/video.entity';
+import {
+  Video,
+  VideoStatus,
+} from '@app/video-processing/domain/entities/video.entity';
 import { VideoRepository } from '@app/video-processing/domain/repositories/video.repository';
 
 // Tipo para representar como o Video é armazenado no DynamoDB
 interface DynamoVideoItem {
   id: string;
-  title: string;
+  sourceFileKey: string;
+  sourceFileName: string;
+  resultFileKey?: string;
+  resultFileName?: string;
   description: string;
-  url: string;
   status: string;
   createdAt: string; // ISO string no DynamoDB
   updatedAt: string; // ISO string no DynamoDB
+  userId: string;
 }
 
 @Injectable()
@@ -42,27 +48,25 @@ export class DynamoDbVideoRepository
   }
 
   async onModuleInit() {
-    const found = await this.findAll();
-
-    console.log(found);
-
+    // const found = await this.findAll();
+    // console.log(found);
     // const created = await this.create({
     //   title: 'Sample Video',
     //   description: 'This is a sample video description.',
     //   url: 'https://example.com/sample-video.mp4',
     //   status: 'pending',
     // });
-
     // console.log(`Sample video created with ID: ${created.id}`);
   }
 
   async create(
-    videoData: Omit<Video, 'id' | 'createdAt' | 'updatedAt'>,
+    videoData: Omit<Video, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
   ): Promise<Video> {
     const now = new Date();
     const video: Video = {
       ...videoData,
       id: uuidv4(),
+      status: VideoStatus.PENDING,
       createdAt: now,
       updatedAt: now,
     };
@@ -89,6 +93,23 @@ export class DynamoDbVideoRepository
     return result.Item
       ? this.fromDynamoItem(result.Item as DynamoVideoItem)
       : null;
+  }
+
+  async findByUserId(userId: string): Promise<Video[]> {
+    const command = new ScanCommand({
+      TableName: this.tableName,
+      FilterExpression: '#userId = :userId',
+      ExpressionAttributeNames: {
+        '#userId': 'userId',
+      },
+      ExpressionAttributeValues: {
+        ':userId': userId,
+      },
+    });
+
+    const result = await this.executeCommand<ScanCommandOutput>(command);
+    const items = result.Items || [];
+    return items.map((item) => this.fromDynamoItem(item as DynamoVideoItem));
   }
 
   async findAll(): Promise<Video[]> {
@@ -158,24 +179,30 @@ export class DynamoDbVideoRepository
   private toDynamoItem(video: Video): DynamoVideoItem {
     return {
       id: video.id,
-      title: video.title,
+      sourceFileKey: video.sourceFileKey,
+      sourceFileName: video.sourceFileName,
+      resultFileKey: video.resultFileKey,
+      resultFileName: video.resultFileName,
       description: video.description,
-      url: video.url,
       status: video.status,
       createdAt: video.createdAt.toISOString(),
       updatedAt: video.updatedAt.toISOString(),
+      userId: video.userId,
     };
   }
 
   private fromDynamoItem(item: DynamoVideoItem): Video {
     return {
       id: item.id,
-      title: item.title,
+      sourceFileKey: item.sourceFileKey,
+      sourceFileName: item.sourceFileName,
+      resultFileKey: item.resultFileKey,
+      resultFileName: item.resultFileName,
       description: item.description,
-      url: item.url,
       status: item.status as Video['status'],
       createdAt: new Date(item.createdAt),
       updatedAt: new Date(item.updatedAt),
+      userId: item.userId,
     };
   }
 }

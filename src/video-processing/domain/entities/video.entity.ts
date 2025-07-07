@@ -15,4 +15,5 @@ export interface Video {
   status: VideoStatus;
   createdAt: Date;
   updatedAt: Date;
+  userId: string;
 }
