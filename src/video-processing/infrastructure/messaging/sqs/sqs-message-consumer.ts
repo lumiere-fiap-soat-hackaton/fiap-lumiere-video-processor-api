@@ -33,14 +33,14 @@ export class SqsMessageConsumer implements MessageConsumer {
     }
 
     this.runningConsumers.set(queueName, true);
-    const baseUrl = this.configService.get<string>('SQS_ENDPOINT');
+    const baseUrl = this.configService.get<string>('sqs.endpoint');
     const fullQueueName = this.configService.get<string>(queueName);
     const queueUrl = `${baseUrl}/queue/${fullQueueName}`;
 
     console.log(`Starting to consume messages from: ${queueUrl}`);
 
     // Start consuming for this specific queue
-    this.consumeQueue(queueUrl, queueName, handler);
+    await this.consumeQueue(queueUrl, queueName, handler);
   }
 
   stopConsuming(queueName?: string): void {
