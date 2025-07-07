@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { QueryBus } from '@nestjs/cqrs';
 import { VideoProcessingsController } from '../../../api/controllers/video-processing.controller';
-import { GetAllVideosQuery } from '../../../application/queries/get-all-videos.query';
-import { GetVideosByUserQuery } from '../../../application/queries/get-videos-by-user.query';
+import { GetAllVideosQuery } from '../../../application/use-cases/get-all-videos/get-all-videos.query';
+import { GetVideosByUserQuery } from '../../../application/use-cases/get-videos-by-user/get-videos-by-user.query';
 import { VideoResponseDto } from '../../../api/dtos/video-response.dto';
 
 describe('VideoProcessingsController', () => {

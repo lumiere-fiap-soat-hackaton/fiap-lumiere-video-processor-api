@@ -14,9 +14,9 @@ const sqsClient = new SQSClient({
 });
 
 const QUEUE_NAMES = [
-  'media_events_queue',
-  'media_process_queue',
-  'media_result_queue',
+  'fiap-lumiere-source-files-events-queue',
+  'fiap-lumiere-process-files-request-queue',
+  'fiap-lumiere-result-files-events-queue',
 ];
 
 async function purgeAllQueues() {

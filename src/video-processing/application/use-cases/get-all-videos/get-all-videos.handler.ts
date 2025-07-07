@@ -1,6 +1,6 @@
 import { QueryHandler, IQueryHandler } from '@nestjs/cqrs';
 import { Inject } from '@nestjs/common';
-import { GetAllVideosQuery } from '../queries/get-all-videos.query';
+import { GetAllVideosQuery } from './get-all-videos.query';
 import { Video } from '@app/video-processing/domain/entities/video.entity';
 import {
   VideoRepository,

@@ -40,7 +40,7 @@ export class SqsMessageConsumer implements MessageConsumer {
     console.log(`Starting to consume messages from: ${queueUrl}`);
 
     // Start consuming for this specific queue
-    await this.consumeQueue(queueUrl, queueName, handler);
+    this.consumeQueue(queueUrl, queueName, handler);
   }
 
   stopConsuming(queueName?: string): void {

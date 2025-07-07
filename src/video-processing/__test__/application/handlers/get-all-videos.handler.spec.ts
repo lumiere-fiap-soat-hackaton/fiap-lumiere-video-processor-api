@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GetAllVideosHandler } from '../../../application/handlers/get-all-videos.handler';
-import { GetAllVideosQuery } from '../../../application/queries/get-all-videos.query';
+import { GetAllVideosHandler } from '../../../application/use-cases/get-all-videos/get-all-videos.handler';
+import { GetAllVideosQuery } from '../../../application/use-cases/get-all-videos/get-all-videos.query';
 import { VIDEO_REPOSITORY } from '../../../domain/repositories/video.repository';
 import { Video, VideoStatus } from '../../../domain/entities/video.entity';
 
