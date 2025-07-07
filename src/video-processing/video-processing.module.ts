@@ -12,9 +12,12 @@ import { MediaResultsConsumerService } from './infrastructure/messaging/media-re
 import { VIDEO_REPOSITORY } from './domain/repositories/video.repository';
 import { MESSAGE_PUBLISHER } from './domain/messaging/message-publisher.interface';
 import { MESSAGE_CONSUMER } from './domain/messaging/message-consumer.interface';
+import { CqrsModule } from '@nestjs/cqrs';
+import { GetVideosByUserHandler } from './application/handlers/get-videos-by-user.handler';
+import { GetAllVideosHandler } from './application/handlers/get-all-videos.handler';
 
 @Module({
-  imports: [DynamoDbModule, SqsModule],
+  imports: [DynamoDbModule, SqsModule, CqrsModule],
   providers: [
     // Repositories
     {
@@ -39,6 +42,10 @@ import { MESSAGE_CONSUMER } from './domain/messaging/message-consumer.interface'
     // Consumer Services (Auto-start)
     MediaEventsConsumerService,
     MediaResultsConsumerService,
+
+    // Application Handlers
+    GetVideosByUserHandler,
+    GetAllVideosHandler,
   ],
   controllers: [VideoProcessingsController],
   exports: [VIDEO_REPOSITORY, MESSAGE_PUBLISHER, MESSAGE_CONSUMER],
