@@ -88,13 +88,10 @@ describe('SqsMessageConsumer', () => {
     });
 
     it('should configure queue URL correctly', async () => {
-      const queueName = 'sqs.mediaEventQueue';
-      const fullQueueName = 'media-event-queue';
+      const queueName = 'media-event-queue';
       const baseUrl = 'http://localhost:4566';
 
-      mockConfigService.get
-        .mockReturnValueOnce(baseUrl) // for sqs.endpoint
-        .mockReturnValueOnce(fullQueueName); // for queue name
+      mockConfigService.get.mockReturnValueOnce(baseUrl); // for sqs.endpoint
 
       const consoleSpy = jest
         .spyOn(console, 'log')
@@ -114,7 +111,7 @@ describe('SqsMessageConsumer', () => {
       }
 
       expect(consoleSpy).toHaveBeenCalledWith(
-        `Starting to consume messages from: ${baseUrl}/queue/${fullQueueName}`,
+        `Starting to consume messages from: ${baseUrl}/${queueName}`,
       );
 
       // Restore original method

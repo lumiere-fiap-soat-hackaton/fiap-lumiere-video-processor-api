@@ -44,12 +44,10 @@ describe('SqsMessagePublisher', () => {
 
   describe('publish', () => {
     it('should publish message successfully', async () => {
-      const queueName = 'sqs.mediaEventQueue';
+      const queueName = 'media-event-queue';
       const messageBody = { videoId: 'test-123', action: 'process' };
 
-      mockConfigService.get
-        .mockReturnValueOnce('http://localhost:4566')
-        .mockReturnValueOnce('media-events-queue');
+      mockConfigService.get.mockReturnValueOnce('http://localhost:4566');
 
       mockSqsClient.send.mockResolvedValue({
         MessageId: 'msg-123',
@@ -59,22 +57,27 @@ describe('SqsMessagePublisher', () => {
       const result = await publisher.publish(queueName, messageBody);
 
       expect(mockConfigService.get).toHaveBeenCalledWith('sqs.endpoint');
-      expect(mockConfigService.get).toHaveBeenCalledWith(queueName);
+      expect(mockSqsClient.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({
+            QueueUrl: `http://localhost:4566/${queueName}`,
+            MessageBody: JSON.stringify(messageBody),
+          }),
+        }),
+      );
       expect(result).toBe('msg-123');
     });
 
     it('should handle SQS errors', async () => {
-      const queueName = 'sqs.mediaEventQueue';
+      const queueName = 'media-event-queue';
       const messageBody = { videoId: 'test-123' };
 
-      mockConfigService.get
-        .mockReturnValueOnce('http://localhost:4566')
-        .mockReturnValueOnce('media-events-queue');
+      mockConfigService.get.mockReturnValueOnce('http://localhost:4566');
 
       mockSqsClient.send.mockRejectedValue(new Error('SQS Error'));
 
       await expect(publisher.publish(queueName, messageBody)).rejects.toThrow(
-        'Failed to publish message to sqs.mediaEventQueue: SQS Error',
+        `Failed to publish message to ${queueName}: SQS Error`,
       );
     });
 
