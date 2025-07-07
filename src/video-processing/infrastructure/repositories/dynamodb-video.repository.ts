@@ -155,15 +155,19 @@ export class DynamoDbVideoRepository
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
+      ReturnValues: 'ALL_NEW', // Retorna todos os atributos após a atualização
+      ConditionExpression: 'attribute_exists(id)', // Garante que o item existe
     });
 
-    const result = await this.executeCommand<UpdateCommandOutput>(command);
-
-    if (!result.Attributes) {
-      throw new Error(`Video with id ${id} not found`);
+    try {
+      const result = await this.executeCommand<UpdateCommandOutput>(command);
+      return this.fromDynamoItem(result.Attributes as DynamoVideoItem);
+    } catch (error) {
+      if (error.name === 'ConditionalCheckFailedException') {
+        throw new Error(`Video with id ${id} not found`);
+      }
+      throw error;
     }
-
-    return this.fromDynamoItem(result.Attributes as DynamoVideoItem);
   }
 
   async delete(id: string): Promise<void> {
