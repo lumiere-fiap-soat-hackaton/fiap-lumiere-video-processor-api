@@ -1,4 +1,9 @@
 export interface AppConfig {
+  aws: {
+    accessKeyId: string;
+    secretAccessKey: string;
+    region: string;
+  };
   app: {
     env: string;
     port: number;
@@ -8,20 +13,23 @@ export interface AppConfig {
     endpoint: string;
     region: string;
   };
-  aws: {
-    region: string;
-    accessKeyId: string;
-    secretAccessKey: string;
-  };
   sqs: {
     endpoint?: string;
     mediaEventsQueue: string;
     mediaProcessQueue: string;
     mediaResultQueue: string;
   };
+  s3: {
+    bucketName: string;
+  };
 }
 
 export const configuration = (): AppConfig => ({
+  aws: {
+    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+    region: process.env.AWS_REGION,
+  },
   app: {
     env: process.env.NODE_ENV || 'development',
     port: Number(process.env.PORT) || 3000,
@@ -31,16 +39,14 @@ export const configuration = (): AppConfig => ({
     endpoint: process.env.DYNAMODB_ENDPOINT,
     region: process.env.DYNAMODB_REGION,
   },
-  aws: {
-    region: process.env.AWS_REGION,
-    accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-    secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
-  },
   sqs: {
     endpoint: process.env.SQS_ENDPOINT,
     mediaEventsQueue: process.env.MEDIA_EVENTS_QUEUE,
     mediaProcessQueue: process.env.MEDIA_PROCESS_QUEUE,
     mediaResultQueue: process.env.MEDIA_RESULT_QUEUE,
+  },
+  s3: {
+    bucketName: process.env.AWS_S3_BUCKET_NAME,
   },
 });
 

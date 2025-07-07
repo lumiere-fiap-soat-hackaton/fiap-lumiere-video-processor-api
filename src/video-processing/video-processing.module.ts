@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { VideoProcessingsController } from './api/controllers/video-processing.controller';
 import { DynamoDbModule } from './infrastructure/database/dynamodb/dynamodb.module';
 import { SqsModule } from './infrastructure/messaging/sqs/sqs.module';
 import { DynamoDbVideoRepository } from './infrastructure/repositories/dynamodb-video.repository';
@@ -12,13 +11,41 @@ import { MediaResultsConsumerService } from './infrastructure/messaging/media-re
 import { VIDEO_REPOSITORY } from './domain/repositories/video.repository';
 import { MESSAGE_PUBLISHER } from './domain/messaging/message-publisher.interface';
 import { MESSAGE_CONSUMER } from './domain/messaging/message-consumer.interface';
+import { VideoController } from '@app/video-processing/api/controllers/video.controller';
+import { IFileStorageService } from './application/services/file-storage.interface';
+import { S3StorageService } from './infrastructure/s3-storage/storage.service';
+import { ConfigService } from '@nestjs/config';
+import { S3Client } from '@aws-sdk/client-s3';
+import { GetSignedUploadUrlHandler } from './application/use-cases/get-signed-upload-url/get-signed-upload-url.handler';
+import { GetSignedDownloadUrlHandler } from './application/use-cases/get-signed-download-url/get-signed-download-url.handler';
 import { CqrsModule } from '@nestjs/cqrs';
-import { GetVideosByUserHandler } from './application/handlers/get-videos-by-user.handler';
-import { GetAllVideosHandler } from './application/handlers/get-all-videos.handler';
+import { GetAllVideosHandler } from './application/use-cases/get-all-videos/get-all-videos.handler';
+import { GetVideosByUserHandler } from './application/use-cases/get-videos-by-user/get-videos-by-user.handler';
+
+const useCaseHandlers = [
+  GetSignedUploadUrlHandler,
+  GetSignedDownloadUrlHandler,
+  GetAllVideosHandler,
+  GetVideosByUserHandler,
+];
 
 @Module({
-  imports: [DynamoDbModule, SqsModule, CqrsModule],
+  imports: [CqrsModule, DynamoDbModule, SqsModule],
   providers: [
+    {
+      provide: IFileStorageService,
+      useFactory: (configService: ConfigService) => {
+        const s3Client = new S3Client({
+          region: configService.get<string>('aws.region'),
+          credentials: {
+            accessKeyId: configService.get<string>('aws.accessKeyId'),
+            secretAccessKey: configService.get<string>('aws.secretAccessKey'),
+          },
+        });
+        return new S3StorageService(s3Client, configService);
+      },
+      inject: [ConfigService],
+    },
     // Repositories
     {
       provide: VIDEO_REPOSITORY,
@@ -43,11 +70,9 @@ import { GetAllVideosHandler } from './application/handlers/get-all-videos.handl
     MediaEventsConsumerService,
     MediaResultsConsumerService,
 
-    // Application Handlers
-    GetVideosByUserHandler,
-    GetAllVideosHandler,
+    ...useCaseHandlers,
   ],
-  controllers: [VideoProcessingsController],
+  controllers: [VideoController],
   exports: [VIDEO_REPOSITORY, MESSAGE_PUBLISHER, MESSAGE_CONSUMER],
 })
 export class VideoProcessingModule {}

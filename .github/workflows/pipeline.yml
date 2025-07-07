@@ -1,0 +1,185 @@
+name: Esteira automatizada de Integração e Deploy Contínuo - Construção, Testes e Implantação no AWS EKS
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+env:
+  AWS_REGION: ${{ secrets.AWS_REGION }}
+  ECR_REPOSITORY: fiap-lumiere-video-processor
+
+jobs:
+  build-and-test:
+    name: Construir Artefato, Executar Testes e Analisar Cobertura
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Realizar Checkout do Código-fonte
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+          ref: ${{ github.ref }}
+
+
+      - name: Configurar o Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: Instalar dependências
+        run: npm install
+
+      - name: Executar testes e gerar cobertura
+        #Remover, após criação dos testes.
+        if: ${{ false }}
+        run: npm run test:cov
+
+      - name: Enviar cobertura ao SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        #Remover, após criação dos testes.
+        if: ${{ false }}
+        run: |
+          SCANNER_META_PATH="$(pwd)/.scanner-meta.properties"
+          npx sonar-scanner \
+            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda \
+            -Dsonar.organization=lumiere-fiap-soat-hackaton \
+            -Dsonar.sources=src \
+            -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
+            -Dsonar.typescript.lcov.reportPaths=coverage/lcov.info \
+            -Dsonar.host.url=$SONAR_HOST_URL \
+            -Dsonar.token=$SONAR_TOKEN \
+            -Dsonar.scanner.metadataFilePath=$SCANNER_META_PATH \
+            -Dsonar.coverage.exclusions=**/common/**,**/__test__/**,**/main.ts,**/configuration.ts,**/*.module.ts,**/*.enum.ts,**/scripts/**,**/migrations
+
+      - name: Validar Quality Gate do SonarCloud
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        #Remover, após criação dos testes.
+        if: ${{ false }}
+        run: |
+          echo "Aguardando análise do SonarCloud finalizar..."
+
+          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda"
+          META_PATH="$(pwd)/.scanner-meta.properties"
+
+          TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
+
+          if [ -z "$TASK_ID" ]; then
+            echo "❌ Não foi possível encontrar ceTaskId. A análise pode ter falhado."
+            exit 1
+          fi
+
+          STATUS="PENDING"
+          while [ "$STATUS" != "SUCCESS" ] && [ "$STATUS" != "FAILED" ]; do
+            echo "⏳ Status da análise: $STATUS"
+            sleep 5
+            STATUS=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.status')
+          done
+
+          if [ "$STATUS" != "SUCCESS" ]; then
+            echo "❌ A análise falhou no SonarCloud (status: $STATUS)"
+            exit 1
+          fi
+
+          ANALYSIS_ID=""
+          while [ -z "$ANALYSIS_ID" ] || [ "$ANALYSIS_ID" == "null" ]; do
+            echo "⏳ Aguardando analysisId da task..."
+            sleep 3
+            ANALYSIS_ID=$(curl -s -u $SONAR_TOKEN: "$SONAR_HOST_URL/api/ce/task?id=$TASK_ID" | jq -r '.task.analysisId')
+          done
+
+          echo "🔍 Validando Quality Gate para análise $ANALYSIS_ID..."
+
+          QUALITY_GATE_STATUS=$(curl -s -u $SONAR_TOKEN: \
+            "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+            | jq -r '.projectStatus.status')
+
+          if [ "$QUALITY_GATE_STATUS" != "OK" ]; then
+            echo -e "\n❌ Quality Gate falhou! Detalhes:"
+            curl -s -u $SONAR_TOKEN: \
+              "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
+              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // \"n/a\")\n  Status: \(.status)\n"'
+            echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
+            exit 1
+          else
+            echo -e "\n✅ Quality Gate aprovado."
+          fi
+
+      - name: Compilar TypeScript
+        run: npm run build
+
+      - name: Arquivar artefatos de build
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+  deploy:
+    name: Deploy para AWS ECS com Fargate
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Realizar Checkout do código-fonte
+        uses: actions/checkout@v4
+
+      - name: Baixar artefatos Construídos
+        uses: actions/download-artifact@v4
+        with:
+          name: build-output
+          path: dist/
+
+      - name: Configurar credenciais da AWS
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-session-token: ${{ secrets.AWS_SESSION_TOKEN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Realizar Login no Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Construir e Enviar imagem Docker para o ECR
+        id: build-image
+        env:
+          ECR_REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          docker build -t $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG -t $ECR_REGISTRY/$ECR_REPOSITORY:latest .
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG
+          docker push $ECR_REGISTRY/$ECR_REPOSITORY:latest
+          echo "image=$ECR_REGISTRY/$ECR_REPOSITORY:$IMAGE_TAG" >> $GITHUB_OUTPUT
+            
+      - name: Preencher o novo identificador da Imagem na Definição da Tarefa do Amazon ECS
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: lumiere-video-processor.json 
+          container-name: fiap-lumiere-api-container
+          image: ${{ steps.build-image.outputs.image }}    
+        
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: fiap-lumiere-api-service
+          cluster: DevCluster
+          wait-for-service-stability: true
