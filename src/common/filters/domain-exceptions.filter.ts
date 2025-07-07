@@ -2,7 +2,6 @@ import { ExceptionFilter, Catch, ArgumentsHost } from '@nestjs/common';
 import { Response } from 'express';
 import { EntityNotFoundException } from '../exceptions/entity-not-found.excention';
 
-
 @Catch(EntityNotFoundException)
 export class DomainExceptionsFilter implements ExceptionFilter {
   catch(exception: EntityNotFoundException, host: ArgumentsHost) {
@@ -15,7 +14,7 @@ export class DomainExceptionsFilter implements ExceptionFilter {
           statusCode: 404,
           message: exception.message,
         });
-        break;     
+        break;
 
       default:
         response.status(500).json({
