@@ -14,8 +14,7 @@ export class SqsMessagePublisher implements MessagePublisher {
 
   async publish<T>(queueName: string, message: T): Promise<string> {
     const baseUrl = this.configService.get<string>('sqs.endpoint');
-    const fullQueueName = this.configService.get<string>(queueName);
-    const queueUrl = `${baseUrl}/queue/${fullQueueName}`;
+    const queueUrl = `${baseUrl}/${queueName}`;
 
     const command = new SendMessageCommand({
       QueueUrl: queueUrl,
