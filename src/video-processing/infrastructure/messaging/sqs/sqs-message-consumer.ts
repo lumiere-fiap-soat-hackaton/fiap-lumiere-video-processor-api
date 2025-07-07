@@ -107,14 +107,15 @@ export class SqsMessageConsumer implements MessageConsumer {
       };
 
       await handler.handle(message);
-      await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle);
-
       console.log(`Message processed successfully: ${message.id}`);
     } catch (error) {
       console.error(
         `Failed to process message ${sqsMessage.MessageId}:`,
         error,
       );
+    } finally {
+      // Sempre remove a mensagem da fila
+      await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle);
     }
   }
 
