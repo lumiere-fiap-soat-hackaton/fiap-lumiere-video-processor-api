@@ -1,0 +1,38 @@
+{
+  "Records": [
+    { 
+      "eventVersion": "2.1",
+      "eventSource": "aws:s3",
+      "awsRegion": "us-east-1",
+      "eventTime": "2025-06-29T23:16:24.172Z",
+      "eventName": "ObjectCreated:Put",
+      "userIdentity": {
+        "principalId": "AWS:AROA5FAHL52XQK2EZIE3V:user3746009=wesley.sangalli@gmail.com"
+      },
+      "requestParameters": {
+        "sourceIPAddress": "179.222.176.138"
+      },
+      "responseElements": {
+        "x-amz-request-id": "FCRVNMKSB7JXZGGX",
+        "x-amz-id-2": "ZHYxJfE9Rm6IVIgw3HjJL+UsTffNeGywb/A3KiNafLoDSrjs46kvZGlU4mNztx6+x9ii2VoovB788LOkjw9zrf+LGWs/KNNL"
+      },
+      "s3": {
+        "s3SchemaVersion": "1.0",
+        "configurationId": "tf-s3-queue-20250629231139971900000001",
+        "bucket": {
+          "name": "fiap-lumiere-bucket",
+          "ownerIdentity": {
+            "principalId": "A3I2PFK18SGSC"
+          },
+          "arn": "arn:aws:s3:::fiap-lumiere-bucket"
+        },
+        "object": {
+          "key": "sources/69f3efe6-d06b-47f3-9c02-2f42657dcfaa-NyanCat.mp4",
+          "size": 6364915,
+          "eTag": "8f577f24142f49f8800875bf94a06915", 
+          "sequencer": "006861C948135B230F"
+        }
+      }
+    }
+  ]
+}

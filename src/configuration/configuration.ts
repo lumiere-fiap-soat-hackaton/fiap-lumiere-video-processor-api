@@ -12,6 +12,13 @@ export interface AppConfig {
   dynamoDb: {
     endpoint: string;
     region: string;
+    tableName: string;
+  };
+  sqs: {
+    endpoint?: string;
+    mediaEventsQueue: string;
+    mediaProcessQueue: string;
+    mediaResultQueue: string;
   };
   s3: {
     bucketName: string;
@@ -32,6 +39,13 @@ export const configuration = (): AppConfig => ({
   dynamoDb: {
     endpoint: process.env.DYNAMODB_ENDPOINT,
     region: process.env.DYNAMODB_REGION,
+    tableName: process.env.DYNAMODB_TABLE_NAME,
+  },
+  sqs: {
+    endpoint: process.env.SQS_ENDPOINT,
+    mediaEventsQueue: process.env.MEDIA_EVENTS_QUEUE,
+    mediaProcessQueue: process.env.MEDIA_PROCESS_QUEUE,
+    mediaResultQueue: process.env.MEDIA_RESULT_QUEUE,
   },
   s3: {
     bucketName: process.env.AWS_S3_BUCKET_NAME,

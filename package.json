@@ -1,5 +1,5 @@
 {
-  "name": "fastfood-video-processor-api",
+  "name": "fiap-lumiere-video-processor-api",
   "version": "0.0.1",
   "description": "",
   "author": "",
@@ -15,11 +15,30 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:cov": "jest --coverage",
-    "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
-    "test:e2e": "jest --config ./test/jest-e2e.json"
+    "dev:db:setup": "ts-node -r tsconfig-paths/register scripts/setup-dev-db.ts",
+    "dev:sqs:setup": "ts-node -r tsconfig-paths/register scripts/setup-sqs-queues.ts",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down",
+    "dev:setup": "npm run docker:up && ping 127.0.0.1 -n 6 > nul && npm run dev:sqs:setup && npm run dev:db:setup",
+    "sqs:list": "aws --endpoint-url=http://localhost:9324 sqs list-queues --region us-east-1",
+    "sqs:purge:all": "ts-node -r tsconfig-paths/register scripts/purge-all-queues.ts",
+    "sqs:delete:all": "ts-node -r tsconfig-paths/register scripts/delete-all-queues.ts",
+    "sqs:receive:events": "aws --endpoint-url=http://localhost:9324 sqs receive-message --queue-url http://localhost:9324/queue/fiap-lumiere-source-files-events-queue --region us-east-1",
+    "sqs:receive:process": "aws --endpoint-url=http://localhost:9324 sqs receive-message --queue-url http://localhost:9324/queue/fiap-lumiere-process-files-request-queue --region us-east-1",
+    "sqs:receive:results": "aws --endpoint-url=http://localhost:9324 sqs receive-message --queue-url http://localhost:9324/queue/fiap-lumiere-result-files-events-queue --region us-east-1",
+    "test:media-event": "aws --endpoint-url=http://localhost:9324 sqs send-message --queue-url http://localhost:9324/queue/fiap-lumiere-source-files-events-queue --message-body file://scripts/test-messages/media-event.json --region us-east-1",
+    "test:media-result": "aws --endpoint-url=http://localhost:9324 sqs send-message --queue-url http://localhost:9324/queue/fiap-lumiere-result-files-events-queue --message-body file://scripts/test-messages/media-result.json --region us-east-1"
+  },
+  "ts-node": {
+    "require": [
+      "tsconfig-paths/register"
+    ]
   },
   "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.840.0",
     "@aws-sdk/client-s3": "^3.839.0",
+    "@aws-sdk/client-sqs": "^3.840.0",
+    "@aws-sdk/lib-dynamodb": "^3.840.0",
     "@aws-sdk/s3-request-presigner": "^3.839.0",
     "@nestjs/common": "^10.4.6",
     "@nestjs/config": "^3.2.3",
@@ -39,19 +58,23 @@
     "pino": "^9.4.0",
     "pino-pretty": "^11.2.2",
     "reflect-metadata": "^0.2.0",
-    "rxjs": "^7.8.1"
+    "rxjs": "^7.8.1",
+    "uuid": "^10.0.0"
   },
   "devDependencies": {
     "@nestjs/cli": "^10.0.0",
     "@nestjs/schematics": "^10.0.0",
     "@nestjs/testing": "^10.4.4",
+    "@types/aws-sdk": "^0.0.42",
     "@types/express": "^4.17.17",
     "@types/jest": "^29.5.2",
     "@types/node": "^20.17.23",
     "@types/sinon": "^17.0.3",
     "@types/supertest": "^6.0.0",
+    "@types/uuid": "^10.0.0",
     "@typescript-eslint/eslint-plugin": "^8.0.0",
     "@typescript-eslint/parser": "^8.0.0",
+    "cross-env": "^7.0.3",
     "eslint": "^8.42.0",
     "eslint-config-airbnb-base": "^15.0.0",
     "eslint-config-prettier": "^9.0.0",
@@ -99,7 +122,8 @@
     "testEnvironment": "node",
     "moduleNameMapper": {
       "@app/(.*)": "<rootDir>/src/$1",
-      "@common/(.*)": "<rootDir>/src/common/$1"
+      "@common/(.*)": "<rootDir>/src/common/$1",
+      "@video-processing/(.*)": "<rootDir>/src/video-processing/$1"
     }
   }
 }

@@ -1,18 +1,31 @@
+import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import {
+  ApiBody,
+  ApiOperation,
+  ApiParam,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
+import { VideoResponseDto } from '../dtos/video-response.dto';
+import { GetAllVideosQuery } from '@app/video-processing/application/use-cases/get-all-videos/get-all-videos.query';
+import { GetVideosByUserQuery } from '@app/video-processing/application/use-cases/get-videos-by-user/get-videos-by-user.query';
 import { GenerateSignedUploadUrlOutput } from '@app/video-processing/application/use-cases/generate-signed-upload-url/generate-signed-upload-url.output';
 import { GenerateSignedUploadUrlCommand } from '@app/video-processing/application/use-cases/generate-signed-upload-url/generate-signed-upload-url.command';
-import { Body, Controller, HttpCode, Post, Response } from '@nestjs/common';
-import { CommandBus } from '@nestjs/cqrs';
-import { ApiBody, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
 import { GenerateSignedUploadUrlRequest } from '../dtos/generate-signed-upload-url.request';
 import { GenerateSignedDownloadUrlRequest } from '../dtos/generate-signed-download-url.request';
 import { GenerateSignedDownloadUrlCommand } from '@app/video-processing/application/use-cases/generate-signed-download-url/generate-signed-download-url.command';
 import { GenerateSignedDownloadUrlOutput } from '@app/video-processing/application/use-cases/generate-signed-download-url/generate-signed-download-url.output';
+import { Video } from '@app/video-processing/domain/entities/video.entity';
 
 @ApiTags('Video Processings')
 @Controller('videos')
 export class VideoController {
   private static readonly DEFAULT_URL_EXPIRATION_SECONDS = 300;
-  constructor(private readonly commandBus: CommandBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @Post('upload-url')
   @HttpCode(200)
@@ -50,5 +63,38 @@ export class VideoController {
       GenerateSignedDownloadUrlOutput
     >(command);
     return { fileName, signedUrl: output.signedUrl };
+  }
+
+  @Get()
+  @ApiOperation({
+    summary: 'Busca todos os vídeos',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de todos os vídeos',
+    type: [VideoResponseDto],
+  })
+  async getAllVideos(): Promise<Video[]> {
+    const query = new GetAllVideosQuery();
+    return await this.queryBus.execute<GetAllVideosQuery, Video[]>(query);
+  }
+
+  @Get('user/:userId')
+  @ApiOperation({
+    summary: 'Busca vídeos por usuário',
+  })
+  @ApiParam({
+    name: 'userId',
+    description: 'ID do usuário',
+    type: 'string',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Lista de vídeos do usuário',
+    type: [VideoResponseDto],
+  })
+  async getVideosByUser(@Param('userId') userId: string): Promise<Video[]> {
+    const query = new GetVideosByUserQuery(userId);
+    return await this.queryBus.execute<GetVideosByUserQuery, Video[]>(query);
   }
 }

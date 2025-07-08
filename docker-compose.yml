@@ -1,0 +1,49 @@
+version: '3.8'
+
+services:
+  dynamodb-local:
+    image: amazon/dynamodb-local:latest
+    container_name: dynamodb-local
+    ports:
+      - "8000:8000"
+    command: ["-jar", "DynamoDBLocal.jar", "-sharedDb", "-dbPath", "./data"]
+    volumes:
+      - ./dynamodb-data:/home/dynamodblocal/data
+    working_dir: /home/dynamodblocal
+    networks:
+      - video-processor-network
+
+  dynamodb-admin:
+    image: aaronshaf/dynamodb-admin:latest
+    container_name: dynamodb-admin
+    ports:
+      - "8001:8001"
+    environment:
+      - DYNAMO_ENDPOINT=http://dynamodb-local:8000
+    depends_on:
+      - dynamodb-local
+    networks:
+      - video-processor-network
+
+  # ElasticMQ - SQS local mais simples e estável
+  elasticmq:
+    image: softwaremill/elasticmq-native:latest
+    container_name: elasticmq-sqs
+    ports:
+      - "9324:9324"  # SQS API
+      - "9325:9325"  # Admin UI
+    networks:
+      - video-processor-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9325/"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+networks:
+  video-processor-network:
+    driver: bridge
+
+volumes:
+  dynamodb-data:
