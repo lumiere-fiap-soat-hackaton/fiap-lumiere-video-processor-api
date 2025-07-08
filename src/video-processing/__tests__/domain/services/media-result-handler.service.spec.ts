@@ -77,9 +77,9 @@ describe('MediaResultHandler', () => {
   describe('handle', () => {
     it('should handle SUCCESS status and update video to COMPLETED', async () => {
       const resultMessage: MediaResultMessage = {
-        request_id: 'test-video-123',
+        id: 'test-video-123',
         status: MediaResultMessageStatus.SUCCESS,
-        result_s3_path: 'results/processed-video.mp4',
+        resultFileKey: 'results/processed-video.mp4',
       };
 
       const updatedVideo = {
@@ -113,9 +113,9 @@ describe('MediaResultHandler', () => {
 
     it('should handle FAILED status and update video to FAILED', async () => {
       const resultMessage: MediaResultMessage = {
-        request_id: 'test-video-123',
+        id: 'test-video-123',
         status: MediaResultMessageStatus.FAILED,
-        result_s3_path: 'results/error-log.txt',
+        resultFileKey: 'results/error-log.txt',
       };
 
       const updatedVideo = {
@@ -149,9 +149,9 @@ describe('MediaResultHandler', () => {
 
     it('should handle NO_FRAMES_EXTRACTED status', async () => {
       const resultMessage: MediaResultMessage = {
-        request_id: 'test-video-123',
+        id: 'test-video-123',
         status: MediaResultMessageStatus.NO_FRAMES_EXTRACTED,
-        result_s3_path: 'results/no-frames.txt',
+        resultFileKey: 'results/no-frames.txt',
       };
 
       mockVideoRepository.findById.mockResolvedValue(mockVideo);
@@ -172,9 +172,9 @@ describe('MediaResultHandler', () => {
 
     it('should handle video not found', async () => {
       const resultMessage: MediaResultMessage = {
-        request_id: 'non-existent-video',
+        id: 'non-existent-video',
         status: MediaResultMessageStatus.SUCCESS,
-        result_s3_path: 'results/processed-video.mp4',
+        resultFileKey: 'results/processed-video.mp4',
       };
 
       mockVideoRepository.findById.mockResolvedValue(null);
@@ -193,9 +193,9 @@ describe('MediaResultHandler', () => {
 
     it('should handle repository errors', async () => {
       const resultMessage: MediaResultMessage = {
-        request_id: 'test-video-123',
+        id: 'test-video-123',
         status: MediaResultMessageStatus.SUCCESS,
-        result_s3_path: 'results/processed-video.mp4',
+        resultFileKey: 'results/processed-video.mp4',
       };
 
       const error = new Error('Database connection failed');
