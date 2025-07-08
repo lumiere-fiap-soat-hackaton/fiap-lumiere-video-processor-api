@@ -1,4 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import {
   PutCommand,
   GetCommand,
@@ -43,8 +44,9 @@ export class DynamoDbVideoRepository
   constructor(
     @Inject(DYNAMODB_DOCUMENT_CLIENT)
     dynamoDb: DynamoDBDocumentClient,
+    private readonly configService: ConfigService,
   ) {
-    super(dynamoDb, 'videos');
+    super(dynamoDb, configService.get<string>('dynamoDb.tableName', 'videos'));
   }
 
   async onModuleInit() {

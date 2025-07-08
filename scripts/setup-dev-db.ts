@@ -39,7 +39,7 @@ class DatabaseSetupService {
   }
 
   async createVideosTable(): Promise<void> {
-    const tableName = this.configService.get<string>('VIDEOS_TABLE', 'videos');
+    const tableName = this.configService.get<string>('dynamoDb.tableName');
 
     if (await this.tableExists(tableName)) {
       console.log(`✅ Table '${tableName}' already exists`);

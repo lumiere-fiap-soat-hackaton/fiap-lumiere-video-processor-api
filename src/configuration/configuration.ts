@@ -12,6 +12,7 @@ export interface AppConfig {
   dynamoDb: {
     endpoint: string;
     region: string;
+    tableName: string;
   };
   sqs: {
     endpoint?: string;
@@ -38,6 +39,7 @@ export const configuration = (): AppConfig => ({
   dynamoDb: {
     endpoint: process.env.DYNAMODB_ENDPOINT,
     region: process.env.DYNAMODB_REGION,
+    tableName: process.env.DYNAMODB_TABLE_NAME,
   },
   sqs: {
     endpoint: process.env.SQS_ENDPOINT,
