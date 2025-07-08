@@ -16,17 +16,17 @@ import { IFileStorageService } from './application/services/file-storage.interfa
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';
 import { ConfigService } from '@nestjs/config';
 import { S3Client } from '@aws-sdk/client-s3';
-import { GetSignedUploadUrlHandler } from './application/use-cases/get-signed-upload-url/get-signed-upload-url.handler';
-import { GetSignedDownloadUrlHandler } from './application/use-cases/get-signed-download-url/get-signed-download-url.handler';
+import { GenerateSignedUploadUrlHandler } from './application/use-cases/generate-signed-upload-url/generate-signed-upload-url.handler';
+import { GenerateSignedDownloadUrlHandler } from './application/use-cases/generate-signed-download-url/generate-signed-download-url.handler';
 import { CqrsModule } from '@nestjs/cqrs';
 import { GetAllVideosHandler } from './application/use-cases/get-all-videos/get-all-videos.handler';
 import { GetVideosByUserHandler } from './application/use-cases/get-videos-by-user/get-videos-by-user.handler';
 
 const useCaseHandlers = [
-  GetSignedUploadUrlHandler,
-  GetSignedDownloadUrlHandler,
   GetAllVideosHandler,
   GetVideosByUserHandler,
+  GenerateSignedUploadUrlHandler,
+  GenerateSignedDownloadUrlHandler,
 ];
 
 @Module({

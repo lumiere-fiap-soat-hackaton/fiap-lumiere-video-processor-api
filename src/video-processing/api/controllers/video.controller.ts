@@ -1,7 +1,4 @@
-import { GetSignedUploadUrlOutput } from '@app/video-processing/application/use-cases/get-signed-upload-url/get-signed-upload-url.output';
-import { GetSignedUploadUrlQuery } from '@app/video-processing/application/use-cases/get-signed-upload-url/get-signed-upload-url.query';
 import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
-import { QueryBus } from '@nestjs/cqrs';
 import {
   ApiBody,
   ApiOperation,
@@ -9,36 +6,45 @@ import {
   ApiResponse,
   ApiTags,
 } from '@nestjs/swagger';
-import { GetSignedUploadUrlRequest } from '../dtos/get-signed-upload-url.request';
-import { GetSignedDownloadUrlRequest } from '../dtos/get-signed-download-url.request';
-import { GetSignedDownloadUrlQuery } from '@app/video-processing/application/use-cases/get-signed-download-url/get-signed-download-url.query';
-import { GetSignedDownloadUrlOutput } from '@app/video-processing/application/use-cases/get-signed-download-url/get-signed-download-url.output';
 import { VideoResponseDto } from '../dtos/video-response.dto';
 import { GetAllVideosQuery } from '@app/video-processing/application/use-cases/get-all-videos/get-all-videos.query';
 import { GetVideosByUserQuery } from '@app/video-processing/application/use-cases/get-videos-by-user/get-videos-by-user.query';
+import { GenerateSignedUploadUrlOutput } from '@app/video-processing/application/use-cases/generate-signed-upload-url/generate-signed-upload-url.output';
+import { GenerateSignedUploadUrlCommand } from '@app/video-processing/application/use-cases/generate-signed-upload-url/generate-signed-upload-url.command';
+import { CommandBus, QueryBus } from '@nestjs/cqrs';
+import { GenerateSignedUploadUrlRequest } from '../dtos/generate-signed-upload-url.request';
+import { GenerateSignedDownloadUrlRequest } from '../dtos/generate-signed-download-url.request';
+import { GenerateSignedDownloadUrlCommand } from '@app/video-processing/application/use-cases/generate-signed-download-url/generate-signed-download-url.command';
+import { GenerateSignedDownloadUrlOutput } from '@app/video-processing/application/use-cases/generate-signed-download-url/generate-signed-download-url.output';
+import { Video } from '@app/video-processing/domain/entities/video.entity';
 
 @ApiTags('Video Processings')
 @Controller('videos')
 export class VideoController {
   private static readonly DEFAULT_URL_EXPIRATION_SECONDS = 300;
-  constructor(private readonly querybus: QueryBus) {}
+  constructor(
+    private readonly commandBus: CommandBus,
+    private readonly queryBus: QueryBus,
+  ) {}
 
   @Post('upload-url')
   @HttpCode(200)
   @ApiOperation({
     summary: 'Gera URL assinada para upload de vídeo',
   })
-  @ApiBody({ type: [GetSignedUploadUrlRequest] })
-  async generateSignedUploadUrl(@Body() files: GetSignedUploadUrlRequest[]) {
-    const query = new GetSignedUploadUrlQuery(
+  @ApiBody({ type: [GenerateSignedUploadUrlRequest] })
+  async generateSignedUploadUrl(
+    @Body() files: GenerateSignedUploadUrlRequest[],
+  ) {
+    const command = new GenerateSignedUploadUrlCommand(
       files,
       VideoController.DEFAULT_URL_EXPIRATION_SECONDS,
     );
 
-    const output = await this.querybus.execute<
-      GetSignedUploadUrlQuery,
-      GetSignedUploadUrlOutput
-    >(query);
+    const output = await this.commandBus.execute<
+      GenerateSignedUploadUrlCommand,
+      GenerateSignedUploadUrlOutput
+    >(command);
     return output.signedUrls;
   }
 
@@ -46,45 +52,49 @@ export class VideoController {
   @ApiOperation({
     summary: 'Gera URL assinada para download de vídeo',
   })
-  async getDownloadUrl(@Body() { fileName }: GetSignedDownloadUrlRequest) {
-    const query = new GetSignedDownloadUrlQuery(
+  async getDownloadUrl(@Body() { fileName }: GenerateSignedDownloadUrlRequest) {
+    const command = new GenerateSignedDownloadUrlCommand(
       fileName,
       VideoController.DEFAULT_URL_EXPIRATION_SECONDS,
     );
 
-    const output = await this.querybus.execute<
-      GetSignedDownloadUrlQuery,
-      GetSignedDownloadUrlOutput
-    >(query);
-    return output.signedUrl;
+    const output = await this.commandBus.execute<
+      GenerateSignedDownloadUrlCommand,
+      GenerateSignedDownloadUrlOutput
+    >(command);
+    return { fileName, signedUrl: output.signedUrl };
   }
 
   @Get()
-  @ApiOperation({ summary: 'Get all videos' })
+  @ApiOperation({
+    summary: 'Busca todos os vídeos',
+  })
   @ApiResponse({
     status: 200,
-    description: 'List of all videos',
+    description: 'Lista de todos os vídeos',
     type: [VideoResponseDto],
   })
-  async getAllVideos(): Promise<VideoResponseDto[]> {
-    return await this.querybus.execute(new GetAllVideosQuery());
+  async getAllVideos(): Promise<Video[]> {
+    const query = new GetAllVideosQuery();
+    return await this.queryBus.execute<GetAllVideosQuery, Video[]>(query);
   }
 
   @Get('user/:userId')
-  @ApiOperation({ summary: 'Get videos by user ID' })
+  @ApiOperation({
+    summary: 'Busca vídeos por usuário',
+  })
   @ApiParam({
     name: 'userId',
-    description: 'User UUID',
-    example: '123e4567-e89b-12d3-a456-426614174000',
+    description: 'ID do usuário',
+    type: 'string',
   })
   @ApiResponse({
     status: 200,
-    description: 'List of videos for the user',
+    description: 'Lista de vídeos do usuário',
     type: [VideoResponseDto],
   })
-  async getVideosByUserId(
-    @Param('userId') userId: string,
-  ): Promise<VideoResponseDto[]> {
-    return await this.querybus.execute(new GetVideosByUserQuery(userId));
+  async getVideosByUser(@Param('userId') userId: string): Promise<Video[]> {
+    const query = new GetVideosByUserQuery(userId);
+    return await this.queryBus.execute<GetVideosByUserQuery, Video[]>(query);
   }
 }

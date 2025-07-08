@@ -2,8 +2,7 @@ name: Esteira automatizada de Integração e Deploy Contínuo - Construção, Te
 
 on:
   push:
-    branches:
-      - main
+    branches: [ main, release/* ]
   pull_request:
     branches:
       - main
@@ -42,20 +41,18 @@ jobs:
         run: npm install
 
       - name: Executar testes e gerar cobertura
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: npm run test:cov
 
       - name: Enviar cobertura ao SonarCloud
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: |
           SCANNER_META_PATH="$(pwd)/.scanner-meta.properties"
           npx sonar-scanner \
-            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda \
+            -Dsonar.projectKey=lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api \
             -Dsonar.organization=lumiere-fiap-soat-hackaton \
             -Dsonar.sources=src \
             -Dsonar.test.inclusions=**/*.spec.ts,**/*.test.ts \
@@ -69,12 +66,11 @@ jobs:
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-        #Remover, após criação dos testes.
-        if: ${{ false }}
+
         run: |
           echo "Aguardando análise do SonarCloud finalizar..."
 
-          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-extractor-lambda"
+          PROJECT_KEY="lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api"
           META_PATH="$(pwd)/.scanner-meta.properties"
 
           TASK_ID=$(grep ceTaskId "$META_PATH" | cut -d'=' -f2)
@@ -113,7 +109,7 @@ jobs:
             echo -e "\n❌ Quality Gate falhou! Detalhes:"
             curl -s -u $SONAR_TOKEN: \
               "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
-              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // \"n/a\")\n  Status: \(.status)\n"'
+              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric) | Valor atual: \(.actual // "n/a") | Status: \(.status)"'
             echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
             exit 1
           else
@@ -172,8 +168,8 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: lumiere-video-processor.json 
-          container-name: fiap-lumiere-api-container
+          task-definition: task-definition/lumiere-video-processor.json
+          container-name: lumiere-video-processor
           image: ${{ steps.build-image.outputs.image }}    
         
       - name: Deploy Amazon ECS task definition
