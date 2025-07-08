@@ -13,7 +13,17 @@ export class SqsMessagePublisher implements MessagePublisher {
   ) {}
 
   async publish<T>(queueName: string, message: T): Promise<string> {
+    if (!queueName) {
+      throw new Error(
+        'Queue name is required and cannot be undefined or empty',
+      );
+    }
+
     const baseUrl = this.configService.get<string>('sqs.endpoint');
+    if (!baseUrl) {
+      throw new Error('SQS endpoint is not configured');
+    }
+
     const queueUrl = `${baseUrl}/${queueName}`;
 
     const command = new SendMessageCommand({
