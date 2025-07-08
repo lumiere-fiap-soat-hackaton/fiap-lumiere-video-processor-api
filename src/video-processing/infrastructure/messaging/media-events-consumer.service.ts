@@ -9,7 +9,7 @@ import {
   MessageConsumer,
   MESSAGE_CONSUMER,
 } from '@app/video-processing/domain/messaging/message-consumer.interface';
-import { MediaEventHandler } from '@app/video-processing/domain/services/media-event-handler.service';
+import { MediaEventApplicationHandler } from '@app/video-processing/application/event-handlers/media-event-application.handler';
 
 @Injectable()
 export class MediaEventsConsumerService
@@ -18,7 +18,7 @@ export class MediaEventsConsumerService
   constructor(
     @Inject(MESSAGE_CONSUMER)
     private readonly messageConsumer: MessageConsumer,
-    private readonly mediaEventHandler: MediaEventHandler,
+    private readonly mediaEventApplicationHandler: MediaEventApplicationHandler,
     private readonly configService: ConfigService,
   ) {}
 
@@ -39,7 +39,7 @@ export class MediaEventsConsumerService
 
       await this.messageConsumer.startConsuming(
         queueKey,
-        this.mediaEventHandler,
+        this.mediaEventApplicationHandler,
       );
     } catch (error) {
       console.error('❌ Failed to start MediaEventsConsumerService:', error);
