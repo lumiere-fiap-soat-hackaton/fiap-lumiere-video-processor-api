@@ -5,7 +5,7 @@ export enum MediaResultMessageStatus {
 }
 
 export interface MediaResultMessage {
-  request_id: string;
-  result_s3_path: string;
+  id: string;
+  resultFileKey: string;
   status: MediaResultMessageStatus;
 }

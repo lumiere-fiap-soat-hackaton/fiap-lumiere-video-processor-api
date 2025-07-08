@@ -24,18 +24,18 @@ export class MediaResultHandler implements MessageHandler<MediaResultMessage> {
 
   async handle(message: Message<MediaResultMessage>): Promise<void> {
     const {
-      request_id,
+      id,
       status: mediaResultMessagestatus,
-      result_s3_path,
+      resultFileKey,
     } = message.body;
 
     try {
-      const foundVideo = await this.videoRepository.findById(request_id);
+      const foundVideo = await this.videoRepository.findById(id);
 
       // Se o vídeo não foi encontrado, confirma a mensagem para não reprocessar
       if (!foundVideo) {
         this.logger.warn(
-          `Video with request_id ${request_id} not found. Message will be acknowledged.`,
+          `Video with request_id ${id} not found. Message will be acknowledged.`,
         );
         return; // Mensagem será confirmada automaticamente
       }
@@ -45,8 +45,7 @@ export class MediaResultHandler implements MessageHandler<MediaResultMessage> {
           ? VideoStatus.COMPLETED
           : VideoStatus.FAILED;
 
-      const resultFileKey = result_s3_path;
-      const resultFileName = result_s3_path.split('/').pop();
+      const resultFileName = resultFileKey.split('/').pop();
 
       const updateData = {
         status,
@@ -54,14 +53,14 @@ export class MediaResultHandler implements MessageHandler<MediaResultMessage> {
         resultFileName,
       };
 
-      await this.videoRepository.update(request_id, updateData);
+      await this.videoRepository.update(id, updateData);
 
       this.logger.log(
-        `Successfully processed media result for request_id: ${request_id}`,
+        `Successfully processed media result for request_id: ${id}`,
       );
     } catch (error) {
       this.logger.error(
-        `Failed to process media result for request_id: ${request_id}`,
+        `Failed to process media result for request_id: ${id}`,
         error,
       );
 
