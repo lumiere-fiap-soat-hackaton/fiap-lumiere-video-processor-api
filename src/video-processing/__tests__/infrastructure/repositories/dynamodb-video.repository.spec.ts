@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { ConfigService } from '@nestjs/config';
 import { DynamoDbVideoRepository } from '../../../infrastructure/repositories/dynamodb-video.repository';
 import { DYNAMODB_DOCUMENT_CLIENT } from '../../../infrastructure/database/dynamodb/dynamodb.module';
 import { Video, VideoStatus } from '../../../domain/entities/video.entity';
@@ -6,6 +7,9 @@ import { Video, VideoStatus } from '../../../domain/entities/video.entity';
 describe('DynamoDbVideoRepository', () => {
   let repository: DynamoDbVideoRepository;
   let mockDynamoClient: any;
+  let mockConfigService: {
+    get: jest.Mock;
+  };
 
   const mockVideo: Video = {
     id: 'test-id-123',
@@ -23,6 +27,13 @@ describe('DynamoDbVideoRepository', () => {
       send: jest.fn(),
     };
 
+    mockConfigService = {
+      get: jest.fn(),
+    };
+
+    // Mock do nome da tabela
+    mockConfigService.get.mockReturnValue('videos');
+
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         DynamoDbVideoRepository,
@@ -30,10 +41,18 @@ describe('DynamoDbVideoRepository', () => {
           provide: DYNAMODB_DOCUMENT_CLIENT,
           useValue: mockDynamoClient,
         },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
+        },
       ],
     }).compile();
 
     repository = module.get<DynamoDbVideoRepository>(DynamoDbVideoRepository);
+  });
+
+  afterEach(() => {
+    jest.clearAllMocks();
   });
 
   describe('create', () => {

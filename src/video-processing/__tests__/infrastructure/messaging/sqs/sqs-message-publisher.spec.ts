@@ -97,5 +97,34 @@ describe('SqsMessagePublisher', () => {
 
       expect(result).toBe('');
     });
+
+    it('should throw error when queueName is undefined', async () => {
+      const messageBody = { videoId: 'test-123' };
+
+      await expect(
+        publisher.publish(undefined as any, messageBody),
+      ).rejects.toThrow(
+        'Queue name is required and cannot be undefined or empty',
+      );
+    });
+
+    it('should throw error when queueName is empty string', async () => {
+      const messageBody = { videoId: 'test-123' };
+
+      await expect(publisher.publish('', messageBody)).rejects.toThrow(
+        'Queue name is required and cannot be undefined or empty',
+      );
+    });
+
+    it('should throw error when SQS endpoint is not configured', async () => {
+      const queueName = 'test-queue';
+      const messageBody = { videoId: 'test-123' };
+
+      mockConfigService.get.mockReturnValueOnce(undefined);
+
+      await expect(publisher.publish(queueName, messageBody)).rejects.toThrow(
+        'SQS endpoint is not configured',
+      );
+    });
   });
 });

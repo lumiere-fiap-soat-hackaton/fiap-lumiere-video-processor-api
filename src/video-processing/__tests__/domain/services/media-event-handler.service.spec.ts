@@ -122,7 +122,9 @@ describe('MediaEventHandler', () => {
         sourceFileName: '123e4567-e89b-12d3-a456-426614174000-video.mp4',
       });
 
-      expect(mockConfigService.get).toHaveBeenCalledWith('sqs.processQueueKey');
+      expect(mockConfigService.get).toHaveBeenCalledWith(
+        'sqs.mediaProcessQueue',
+      );
       expect(mockMessagePublisher.publish).toHaveBeenCalledWith(
         'process-queue',
         mockVideo,
