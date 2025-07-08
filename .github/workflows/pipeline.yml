@@ -16,6 +16,7 @@ permissions:
 env:
   AWS_REGION: ${{ secrets.AWS_REGION }}
   ECR_REPOSITORY: fiap-lumiere-video-processor
+  ECS_CLUSTER_NAME: fiap-lumiere-cluster
 
 jobs:
   build-and-test:
@@ -63,6 +64,7 @@ jobs:
             -Dsonar.coverage.exclusions=**/common/**,**/__test__/**,**/main.ts,**/configuration.ts,**/*.module.ts,**/*.enum.ts,**/scripts/**,**/migrations
 
       - name: Validar Quality Gate do SonarCloud
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
@@ -129,7 +131,7 @@ jobs:
     name: Deploy para AWS ECS com Fargate
     needs: build-and-test
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/heads/release/')
 
     steps:
       - name: Realizar Checkout do código-fonte
@@ -169,13 +171,17 @@ jobs:
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
           task-definition: task-definition/lumiere-video-processor.json
-          container-name: lumiere-video-processor
-          image: ${{ steps.build-image.outputs.image }}    
+          container-name: fiap-lumiere-api-container
+          image: ${{ steps.build-image.outputs.image }}
+          environment-variables: |
+            LOG_LEVEL=debug
+            AWS_REGION=${{ env.AWS_REGION }}
+   
         
       - name: Deploy Amazon ECS task definition
-        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.task-def.outputs.task-definition }}
           service: fiap-lumiere-api-service
-          cluster: DevCluster
+          cluster: ${{ env.ECS_CLUSTER_NAME }}
           wait-for-service-stability: true

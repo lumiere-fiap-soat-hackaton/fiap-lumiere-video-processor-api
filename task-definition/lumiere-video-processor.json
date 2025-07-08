@@ -10,12 +10,13 @@
   "taskRoleArn": "arn:aws:iam::904106077871:role/LabRole",
   "containerDefinitions": [
     {
-      "name": "lumiere-video-processor",
+      "name": "fiap-lumiere-api-container",
       "cpu": 256,
       "memory": 512,
       "essential": true,
       "portMappings": [
         {
+          "name": "api-port",
           "containerPort": 3000,
           "hostPort": 3000,
           "protocol": "tcp"
@@ -30,11 +31,37 @@
       "logConfiguration": {
         "logDriver": "awslogs",
         "options": {
-          "awslogs-group": "/ecs/fiap-lumiere-video-processor-api",
+          "awslogs-group": "/ecs/fiap-lumiere-api",
           "awslogs-region": "us-east-1",
           "awslogs-stream-prefix": "ecs"
         }
-      }
+      },
+      "secrets": [
+        {
+          "name": "AWS_ACCESS_KEY_ID",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/aws/AWS_ACCESS_KEY_ID"
+        },
+        {
+          "name": "AWS_SECRET_ACCESS_KEY",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/aws/AWS_SECRET_ACCESS_KEY"
+        },
+        {
+          "name": "AWS_S3_BUCKET_NAME",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/s3/AWS_S3_BUCKET_NAME"
+        },
+        {
+          "name": "DYNAMODB_TABLE_NAME",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/dynamodb/DYNAMODB_TABLE_NAME"
+        },
+        {
+          "name": "DYNAMODB_ENDPOINT",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/dynamodb/DYNAMODB_ENDPOINT"
+        },
+        {
+          "name": "DYNAMODB_REGION",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/dynamodb/DYNAMODB_REGION"
+        }
+      ]
     }
   ]
 }
