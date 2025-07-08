@@ -111,7 +111,7 @@ jobs:
             echo -e "\n❌ Quality Gate falhou! Detalhes:"
             curl -s -u $SONAR_TOKEN: \
               "$SONAR_HOST_URL/api/qualitygates/project_status?analysisId=$ANALYSIS_ID" \
-              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric)\n  Valor atual: \(.actual // \"n/a\")\n  Status: \(.status)\n"'
+              | jq -r '.projectStatus.conditions[] | select(.status != "OK") | "- Critério: \(.metric) | Valor atual: \(.actual // "n/a") | Status: \(.status)"'
             echo -e "\n🔗 Ver detalhes: $SONAR_HOST_URL/dashboard?id=$PROJECT_KEY"
             exit 1
           else
@@ -170,12 +170,9 @@ jobs:
         id: task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
-          task-definition: task-definition/lumiere-video-processor.json
+          task-definition: lumiere-video-processor.json 
           container-name: fiap-lumiere-api-container
-          image: ${{ steps.build-image.outputs.image }}
-          environment-variables: |
-            LOG_LEVEL=info
-            AWS_REGION=${{ env.AWS_REGION }}
+          image: ${{ steps.build-image.outputs.image }}    
         
       - name: Deploy Amazon ECS task definition
         uses: aws-actions/amazon-ecs-deploy-task-definition@v1

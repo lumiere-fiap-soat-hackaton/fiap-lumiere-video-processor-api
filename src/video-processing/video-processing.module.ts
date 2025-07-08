@@ -4,13 +4,13 @@ import { IFileStorageService } from './application/services/file-storage.interfa
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';
 import { ConfigService } from '@nestjs/config';
 import { S3Client } from '@aws-sdk/client-s3';
-import { GetSignedUploadUrlHandler } from './application/use-cases/get-signed-upload-url/get-signed-upload-url.handler';
-import { GetSignedDownloadUrlHandler } from './application/use-cases/get-signed-download-url/get-signed-download-url.handler';
+import { GenerateSignedUploadUrlHandler } from './application/use-cases/generate-signed-upload-url/generate-signed-upload-url.handler';
+import { GenerateSignedDownloadUrlHandler } from './application/use-cases/generate-signed-download-url/generate-signed-download-url.handler';
 import { CqrsModule } from '@nestjs/cqrs';
 
-const useCaseHandlers = [
-  GetSignedUploadUrlHandler,
-  GetSignedDownloadUrlHandler,
+const commandHandlers = [
+  GenerateSignedUploadUrlHandler,
+  GenerateSignedDownloadUrlHandler,
 ];
 
 @Module({
@@ -30,7 +30,7 @@ const useCaseHandlers = [
       },
       inject: [ConfigService],
     },
-    ...useCaseHandlers,
+    ...commandHandlers,
   ],
   controllers: [VideoController],
 })
