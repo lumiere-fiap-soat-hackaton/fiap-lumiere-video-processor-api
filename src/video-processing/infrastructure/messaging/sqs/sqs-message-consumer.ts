@@ -99,22 +99,24 @@ export class SqsMessageConsumer implements MessageConsumer {
     handler: MessageHandler<T>,
   ): Promise<void> {
     try {
+      console.log(`-- Received SQS message: ${JSON.stringify(sqsMessage)}`);
+
       const message: Message<T> = {
         id: sqsMessage.MessageId,
         body: JSON.parse(sqsMessage.Body),
         receiptHandle: sqsMessage.ReceiptHandle,
       };
 
+      console.log(`-- Processing message: ${JSON.stringify(message)}`);
+
       await handler.handle(message);
+      await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle);
       console.log(`Message processed successfully: ${message.id}`);
     } catch (error) {
       console.error(
         `Failed to process message ${sqsMessage.MessageId}:`,
         error,
       );
-    } finally {
-      // Sempre remove a mensagem da fila
-      await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle);
     }
   }
 

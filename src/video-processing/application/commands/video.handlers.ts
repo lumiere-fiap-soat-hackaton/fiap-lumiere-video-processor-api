@@ -34,11 +34,17 @@ export class ProcessMediaFileHandler {
       sourceFileName,
     });
 
+    console.log(`-- Video created with ID: ${video.id}, User: ${userId}`);
+
     // 2. Enviar para fila de processamento
     const processQueueKey = this.configService.get<string>(
       'sqs.mediaProcessQueue',
     );
     await this.messagePublisher.publish(processQueueKey, video);
+
+    console.log(
+      `-- Video processing command sent to queue: ${processQueueKey}, Video ID: ${video.id}`,
+    );
   }
 }
 

@@ -73,15 +73,22 @@ export class DynamoDbVideoRepository
       updatedAt: now,
     };
 
+    console.log(`-- Creating video with ID: ${video.id}`);
+
     // Converter para formato DynamoDB
     const dynamoItem = this.toDynamoItem(video);
 
-    const command = new PutCommand({
-      TableName: this.tableName,
-      Item: dynamoItem,
-    });
+    try {
+      const command = new PutCommand({
+        TableName: this.tableName,
+        Item: dynamoItem,
+      });
 
-    await this.executeCommand<PutCommandOutput>(command);
+      await this.executeCommand<PutCommandOutput>(command);
+    } catch (error) {
+      console.error(`Error creating video with ID ${video.id}:`, error);
+      throw new Error(`Failed to create video: ${error}`);
+    }
     return video;
   }
 

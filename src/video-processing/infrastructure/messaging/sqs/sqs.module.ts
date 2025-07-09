@@ -41,11 +41,13 @@ export const SQS_CLIENT = 'SQS_CLIENT';
           const secretAccessKey = configService.get<string>(
             'aws.secretAccessKey',
           );
+          const sessionToken = configService.get<string>('aws.sessionToken');
 
           if (accessKeyId && secretAccessKey) {
             config.credentials = {
               accessKeyId,
               secretAccessKey,
+              sessionToken,
             };
           }
         }

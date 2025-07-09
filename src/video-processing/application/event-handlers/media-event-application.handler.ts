@@ -1,64 +1,57 @@
+import {
+  SQSMessageS3Details,
+  SQSMessageS3EventRecord,
+} from '@app/video-processing/domain/messaging/messages/sqs-message.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  MessageHandler,
   Message,
+  MessageHandler,
 } from '../../domain/messaging/message-consumer.interface';
-import {
-  MediaEventMessage,
-  S3EventRecord,
-  SQSRecord,
-  S3EventMessage,
-} from '../../domain/messaging/messages/media-event-message';
 import { ProcessMediaFileHandler } from '../commands/video.handlers';
 
 @Injectable()
-export class MediaEventApplicationHandler
-  implements MessageHandler<MediaEventMessage>
-{
+export class MediaEventApplicationHandler implements MessageHandler {
   private readonly logger = new Logger(MediaEventApplicationHandler.name);
 
   constructor(
     private readonly processMediaFileHandler: ProcessMediaFileHandler,
   ) {}
 
-  async handle(message: Message<MediaEventMessage>): Promise<void> {
-    console.log(`Processing SQS records: ${JSON.stringify(message)}`);
+  async handle(message: Message): Promise<void> {
+    console.log(`-- Processing SQS records: ${JSON.stringify(message)}`);
 
     // Processar cada SQS record individualmente
     for (const sqsRecord of message.body.Records) {
+      console.log(`Processing Record: ${JSON.stringify(sqsRecord)}`);
       try {
         await this.processSQSRecord(sqsRecord);
       } catch (error) {
-        this.logger.error(
-          `Failed to process SQS record ${sqsRecord.messageId}:`,
-          error,
-        );
+        this.logger.error(`Failed to process SQS record ${sqsRecord}:`, error);
         // Continuar processando outros records mesmo se um falhar
       }
     }
   }
 
-  private async processSQSRecord(sqsRecord: SQSRecord): Promise<void> {
+  private async processSQSRecord(
+    sqsRecord: SQSMessageS3EventRecord,
+  ): Promise<void> {
     try {
       // Parse do body do SQS que contém o S3 event
-      const s3Event = JSON.parse(sqsRecord.body) as S3EventMessage;
-
-      // Processar cada S3 record dentro do SQS message
-      for (const s3Record of s3Event.Records) {
-        await this.processS3Record(s3Record);
-      }
+      const s3Event = sqsRecord.s3;
+      console.log(`Processing S3 event: ${JSON.stringify(s3Event)}`);
+      await this.processS3Record(s3Event);
     } catch (parseError) {
       this.logger.error(
-        `Failed to parse SQS body for message ${sqsRecord.messageId}:`,
+        `Failed to parse SQS body for message ${sqsRecord}:`,
         parseError,
       );
       throw parseError;
     }
   }
 
-  private async processS3Record(record: S3EventRecord): Promise<void> {
-    const { object: s3Object } = record.s3;
-    const objectKey = s3Object.key;
+  private async processS3Record(record: SQSMessageS3Details): Promise<void> {
+    const objectKey = record.object.key;
+    console.log(`-- Processing S3 object: ${objectKey}`);
 
     // Extrair informações do arquivo
     const { fileName, uuid: userId } = this.extractFileInfo(objectKey);
@@ -67,6 +60,8 @@ export class MediaEventApplicationHandler
       this.logger.warn(`Could not extract user ID from file: ${objectKey}`);
       return;
     }
+
+    console.log(`-- Processing file: ${fileName} for user: ${userId}`);
 
     // Executar comando de processamento
     await this.processMediaFileHandler.handle({
