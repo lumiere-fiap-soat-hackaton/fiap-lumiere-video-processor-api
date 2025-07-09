@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { SQSClient, SQSClientConfig } from '@aws-sdk/client-sqs';
-import { queue } from 'rxjs';
 
 export const SQS_CLIENT = 'SQS_CLIENT';
 
