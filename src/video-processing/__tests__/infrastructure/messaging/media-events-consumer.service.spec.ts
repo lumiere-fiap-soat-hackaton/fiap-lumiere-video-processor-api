@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigService } from '@nestjs/config';
 import { MediaEventsConsumerService } from '../../../infrastructure/messaging/media-events-consumer.service';
-import { MediaEventHandler } from '../../../domain/services/media-event-handler.service';
+import { MediaEventApplicationHandler } from '../../../application/event-handlers/media-event-application.handler';
 import {
   MessageConsumer,
   MESSAGE_CONSUMER,
@@ -13,7 +13,7 @@ describe('MediaEventsConsumerService', () => {
     startConsuming: jest.Mock;
     stopConsuming: jest.Mock;
   };
-  let mockMediaEventHandler: {
+  let mockMediaEventApplicationHandler: {
     handle: jest.Mock;
   };
   let mockConfigService: {
@@ -26,7 +26,7 @@ describe('MediaEventsConsumerService', () => {
       stopConsuming: jest.fn(),
     };
 
-    mockMediaEventHandler = {
+    mockMediaEventApplicationHandler = {
       handle: jest.fn(),
     };
 
@@ -42,8 +42,8 @@ describe('MediaEventsConsumerService', () => {
           useValue: mockMessageConsumer,
         },
         {
-          provide: MediaEventHandler,
-          useValue: mockMediaEventHandler,
+          provide: MediaEventApplicationHandler,
+          useValue: mockMediaEventApplicationHandler,
         },
         {
           provide: ConfigService,
@@ -75,7 +75,7 @@ describe('MediaEventsConsumerService', () => {
       );
       expect(mockMessageConsumer.startConsuming).toHaveBeenCalledWith(
         mockQueueKey,
-        mockMediaEventHandler,
+        mockMediaEventApplicationHandler,
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         '🚀 Starting MediaEventsConsumerService for queue: media-events-queue',
@@ -100,7 +100,7 @@ describe('MediaEventsConsumerService', () => {
       );
       expect(mockMessageConsumer.startConsuming).toHaveBeenCalledWith(
         mockQueueKey,
-        mockMediaEventHandler,
+        mockMediaEventApplicationHandler,
       );
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '❌ Failed to start MediaEventsConsumerService:',
@@ -122,7 +122,7 @@ describe('MediaEventsConsumerService', () => {
       );
       expect(mockMessageConsumer.startConsuming).toHaveBeenCalledWith(
         undefined,
-        mockMediaEventHandler,
+        mockMediaEventApplicationHandler,
       );
       expect(consoleSpy).toHaveBeenCalledWith(
         '🚀 Starting MediaEventsConsumerService for queue: undefined',
@@ -163,7 +163,7 @@ describe('MediaEventsConsumerService', () => {
 
       expect(mockMessageConsumer.startConsuming).toHaveBeenCalledWith(
         mockQueueKey,
-        mockMediaEventHandler,
+        mockMediaEventApplicationHandler,
       );
 
       // Stop

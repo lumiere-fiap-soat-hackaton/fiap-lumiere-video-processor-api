@@ -4,8 +4,13 @@ import { SqsModule } from './infrastructure/messaging/sqs/sqs.module';
 import { DynamoDbVideoRepository } from './infrastructure/repositories/dynamodb-video.repository';
 import { SqsMessagePublisher } from './infrastructure/messaging/sqs/sqs-message-publisher';
 import { SqsMessageConsumer } from './infrastructure/messaging/sqs/sqs-message-consumer';
-import { MediaEventHandler } from './domain/services/media-event-handler.service';
-import { MediaResultHandler } from './domain/services/media-result-handler.service';
+import {
+  ProcessMediaFileHandler,
+  UpdateVideoStatusHandler,
+} from './application/commands/video.handlers';
+import { MediaEventApplicationHandler } from './application/event-handlers/media-event-application.handler';
+import { MediaResultApplicationHandler } from './application/event-handlers/media-result-application.handler';
+
 import { MediaEventsConsumerService } from './infrastructure/messaging/media-events-consumer.service';
 import { MediaResultsConsumerService } from './infrastructure/messaging/media-results-consumer.service';
 import { VIDEO_REPOSITORY } from './domain/repositories/video.repository';
@@ -27,6 +32,13 @@ const useCaseHandlers = [
   GetVideosByUserHandler,
   GenerateSignedUploadUrlHandler,
   GenerateSignedDownloadUrlHandler,
+];
+
+const commandHandlers = [ProcessMediaFileHandler, UpdateVideoStatusHandler];
+
+const eventHandlers = [
+  MediaEventApplicationHandler,
+  MediaResultApplicationHandler,
 ];
 
 @Module({
@@ -72,14 +84,12 @@ const useCaseHandlers = [
       useClass: SqsMessageConsumer,
     },
 
-    // Domain Services (Handlers)
-    MediaEventHandler,
-    MediaResultHandler,
-
     // Consumer Services (Auto-start)
     MediaEventsConsumerService,
     MediaResultsConsumerService,
 
+    ...commandHandlers,
+    ...eventHandlers,
     ...useCaseHandlers,
   ],
   controllers: [VideoController],

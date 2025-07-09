@@ -1,39 +1,35 @@
-import { Injectable, Inject } from '@nestjs/common';
-import { ConfigService } from '@nestjs/config';
+import { Injectable, Logger } from '@nestjs/common';
 import {
   MessageHandler,
   Message,
-} from '../messaging/message-consumer.interface';
-import {
-  MessagePublisher,
-  MESSAGE_PUBLISHER,
-} from '../messaging/message-publisher.interface';
+} from '../../domain/messaging/message-consumer.interface';
 import {
   MediaEventMessage,
   S3EventRecord,
-} from '../messaging/messages/media-event-message';
-import {
-  VideoRepository,
-  VIDEO_REPOSITORY,
-} from '../repositories/video.repository';
+} from '../../domain/messaging/messages/media-event-message';
+import { ProcessMediaFileHandler } from '../commands/video.handlers';
 
 @Injectable()
-export class MediaEventHandler implements MessageHandler<MediaEventMessage> {
+export class MediaEventApplicationHandler
+  implements MessageHandler<MediaEventMessage>
+{
+  private readonly logger = new Logger(MediaEventApplicationHandler.name);
+
   constructor(
-    @Inject(MESSAGE_PUBLISHER)
-    private readonly messagePublisher: MessagePublisher,
-    @Inject(VIDEO_REPOSITORY)
-    private readonly videoRepository: VideoRepository,
-    private readonly configService: ConfigService,
+    private readonly processMediaFileHandler: ProcessMediaFileHandler,
   ) {}
 
   async handle(message: Message<MediaEventMessage>): Promise<void> {
+    this.logger.log(
+      `Processing ${message.body.Records.length} S3 event records`,
+    );
+
     // Processar cada record individualmente
     for (const record of message.body.Records) {
       try {
         await this.processRecord(record);
       } catch (error) {
-        console.error(
+        this.logger.error(
           `Failed to process record for ${record.s3.object.key}:`,
           error,
         );
@@ -46,21 +42,22 @@ export class MediaEventHandler implements MessageHandler<MediaEventMessage> {
     const { object: s3Object } = record.s3;
     const objectKey = s3Object.key;
 
-    // Extrair nome do arquivo
+    // Extrair informações do arquivo
     const { fileName, uuid: userId } = this.extractFileInfo(objectKey);
 
-    // 1. Criar registro do vídeo no banco
-    const video = await this.videoRepository.create({
+    if (!userId) {
+      this.logger.warn(`Could not extract user ID from file: ${objectKey}`);
+      return;
+    }
+
+    // Executar comando de processamento
+    await this.processMediaFileHandler.handle({
       userId,
       sourceFileKey: objectKey,
       sourceFileName: fileName,
     });
 
-    // 2. Enviar para fila de processamento
-    const processQueueKey = this.configService.get<string>(
-      'sqs.mediaProcessQueue',
-    );
-    await this.messagePublisher.publish(processQueueKey, video);
+    this.logger.log(`Successfully processed media event for file: ${fileName}`);
   }
 
   private extractFileInfo(objectKey: string): {
@@ -85,7 +82,7 @@ export class MediaEventHandler implements MessageHandler<MediaEventMessage> {
     }
 
     // Fallback se não conseguir extrair UUID
-    console.warn(`Could not extract UUID from: ${fileName}`);
+    this.logger.warn(`Could not extract UUID from: ${fileName}`);
     return {
       fileName,
       uuid: '',
