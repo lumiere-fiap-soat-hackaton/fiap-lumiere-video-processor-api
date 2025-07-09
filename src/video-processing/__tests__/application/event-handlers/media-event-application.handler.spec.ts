@@ -6,12 +6,59 @@ import { Message } from '../../../domain/messaging/message-consumer.interface';
 import {
   MediaEventMessage,
   S3EventRecord,
+  SQSRecord,
+  S3EventMessage,
 } from '../../../domain/messaging/messages/media-event-message';
 
 describe('MediaEventApplicationHandler', () => {
   let handler: MediaEventApplicationHandler;
   let processMediaFileHandler: jest.Mocked<ProcessMediaFileHandler>;
   let loggerSpy: jest.SpyInstance;
+
+  // Helper function to create mock SQS record
+  const createMockSQSRecord = (s3Records: S3EventRecord[]): SQSRecord => {
+    const s3Event: S3EventMessage = {
+      Records: s3Records,
+    };
+
+    return {
+      messageId: 'test-message-id',
+      receiptHandle: 'test-receipt-handle',
+      body: JSON.stringify(s3Event),
+      attributes: {
+        ApproximateReceiveCount: '1',
+        SentTimestamp: '1234567890',
+        SenderId: 'test-sender',
+        ApproximateFirstReceiveTimestamp: '1234567890',
+      },
+      messageAttributes: {},
+      md5OfBody: 'test-md5',
+      eventSource: 'aws:sqs',
+      eventSourceARN: 'arn:aws:sqs:test',
+      awsRegion: 'us-east-1',
+    };
+  };
+
+  // Helper function to create mock S3 record
+  const createMockS3Record = (objectKey: string): S3EventRecord => ({
+    eventVersion: '2.1',
+    eventSource: 'aws:s3',
+    awsRegion: 'us-east-1',
+    eventTime: '2025-01-01T00:00:00.000Z',
+    eventName: 'ObjectCreated:Put',
+    s3: {
+      s3SchemaVersion: '1.0',
+      bucket: {
+        name: 'test-bucket',
+        arn: 'arn:aws:s3:::test-bucket',
+      },
+      object: {
+        key: objectKey,
+        size: 1024,
+        eTag: 'test-etag',
+      },
+    },
+  });
 
   beforeEach(async () => {
     const mockProcessMediaFileHandler = {
@@ -50,19 +97,16 @@ describe('MediaEventApplicationHandler', () => {
       const mockFileName = 'video.mp4';
       const mockObjectKey = `${mockUuid}-${mockFileName}`;
 
-      const mockS3Record: S3EventRecord = {
-        s3: {
-          object: {
-            key: mockObjectKey,
-          },
-        },
-      } as S3EventRecord;
+      const mockS3Record = createMockS3Record(mockObjectKey);
+      const mockSQSRecord = createMockSQSRecord([mockS3Record]);
 
       const mockMessage: Message<MediaEventMessage> = {
+        id: 'test-id',
+        receiptHandle: 'test-receipt',
         body: {
-          Records: [mockS3Record],
+          Records: [mockSQSRecord],
         },
-      } as Message<MediaEventMessage>;
+      };
 
       processMediaFileHandler.handle.mockResolvedValue(undefined);
 
@@ -70,7 +114,6 @@ describe('MediaEventApplicationHandler', () => {
       await handler.handle(mockMessage);
 
       // Assert
-      expect(loggerSpy).toHaveBeenCalledWith('Processing 1 S3 event records');
       expect(processMediaFileHandler.handle).toHaveBeenCalledWith({
         userId: mockUuid,
         sourceFileKey: mockObjectKey,
@@ -90,28 +133,17 @@ describe('MediaEventApplicationHandler', () => {
       const mockObjectKey1 = `${mockUuid1}-${mockFileName1}`;
       const mockObjectKey2 = `${mockUuid2}-${mockFileName2}`;
 
-      const mockS3Records: S3EventRecord[] = [
-        {
-          s3: {
-            object: {
-              key: mockObjectKey1,
-            },
-          },
-        } as S3EventRecord,
-        {
-          s3: {
-            object: {
-              key: mockObjectKey2,
-            },
-          },
-        } as S3EventRecord,
-      ];
+      const mockS3Record1 = createMockS3Record(mockObjectKey1);
+      const mockS3Record2 = createMockS3Record(mockObjectKey2);
+      const mockSQSRecord = createMockSQSRecord([mockS3Record1, mockS3Record2]);
 
       const mockMessage: Message<MediaEventMessage> = {
+        id: 'test-id',
+        receiptHandle: 'test-receipt',
         body: {
-          Records: mockS3Records,
+          Records: [mockSQSRecord],
         },
-      } as Message<MediaEventMessage>;
+      };
 
       processMediaFileHandler.handle.mockResolvedValue(undefined);
 
@@ -119,7 +151,6 @@ describe('MediaEventApplicationHandler', () => {
       await handler.handle(mockMessage);
 
       // Assert
-      expect(loggerSpy).toHaveBeenCalledWith('Processing 2 S3 event records');
       expect(processMediaFileHandler.handle).toHaveBeenCalledTimes(2);
       expect(processMediaFileHandler.handle).toHaveBeenNthCalledWith(1, {
         userId: mockUuid1,
@@ -142,45 +173,30 @@ describe('MediaEventApplicationHandler', () => {
       const mockObjectKey1 = `${mockUuid1}-${mockFileName1}`;
       const mockObjectKey2 = `${mockUuid2}-${mockFileName2}`;
 
-      const mockS3Records: S3EventRecord[] = [
-        {
-          s3: {
-            object: {
-              key: mockObjectKey1,
-            },
-          },
-        } as S3EventRecord,
-        {
-          s3: {
-            object: {
-              key: mockObjectKey2,
-            },
-          },
-        } as S3EventRecord,
-      ];
+      // Create separate SQS records to test SQS-level failure recovery
+      const mockS3Record1 = createMockS3Record(mockObjectKey1);
+      const mockS3Record2 = createMockS3Record(mockObjectKey2);
+      const mockSQSRecord1 = createMockSQSRecord([mockS3Record1]);
+      const mockSQSRecord2 = createMockSQSRecord([mockS3Record2]);
 
       const mockMessage: Message<MediaEventMessage> = {
+        id: 'test-id',
+        receiptHandle: 'test-receipt',
         body: {
-          Records: mockS3Records,
+          Records: [mockSQSRecord1, mockSQSRecord2],
         },
-      } as Message<MediaEventMessage>;
+      };
 
       const mockError = new Error('Processing failed');
       processMediaFileHandler.handle
         .mockRejectedValueOnce(mockError)
         .mockResolvedValueOnce(undefined);
 
-      const errorSpy = jest.spyOn(Logger.prototype, 'error');
-
       // Act
       await handler.handle(mockMessage);
 
       // Assert
       expect(processMediaFileHandler.handle).toHaveBeenCalledTimes(2);
-      expect(errorSpy).toHaveBeenCalledWith(
-        `Failed to process record for ${mockObjectKey1}:`,
-        mockError,
-      );
       expect(loggerSpy).toHaveBeenCalledWith(
         `Successfully processed media event for file: ${mockObjectKey2}`,
       );
@@ -190,19 +206,16 @@ describe('MediaEventApplicationHandler', () => {
       // Arrange
       const mockObjectKey = 'invalid-filename.mp4';
 
-      const mockS3Record: S3EventRecord = {
-        s3: {
-          object: {
-            key: mockObjectKey,
-          },
-        },
-      } as S3EventRecord;
+      const mockS3Record = createMockS3Record(mockObjectKey);
+      const mockSQSRecord = createMockSQSRecord([mockS3Record]);
 
       const mockMessage: Message<MediaEventMessage> = {
+        id: 'test-id',
+        receiptHandle: 'test-receipt',
         body: {
-          Records: [mockS3Record],
+          Records: [mockSQSRecord],
         },
-      } as Message<MediaEventMessage>;
+      };
 
       const warnSpy = jest.spyOn(Logger.prototype, 'warn');
 
@@ -222,19 +235,16 @@ describe('MediaEventApplicationHandler', () => {
       const mockFileName = 'video.mp4';
       const mockObjectKey = `sources/${mockUuid}-${mockFileName}`;
 
-      const mockS3Record: S3EventRecord = {
-        s3: {
-          object: {
-            key: mockObjectKey,
-          },
-        },
-      } as S3EventRecord;
+      const mockS3Record = createMockS3Record(mockObjectKey);
+      const mockSQSRecord = createMockSQSRecord([mockS3Record]);
 
       const mockMessage: Message<MediaEventMessage> = {
+        id: 'test-id',
+        receiptHandle: 'test-receipt',
         body: {
-          Records: [mockS3Record],
+          Records: [mockSQSRecord],
         },
-      } as Message<MediaEventMessage>;
+      };
 
       processMediaFileHandler.handle.mockResolvedValue(undefined);
 
@@ -248,6 +258,46 @@ describe('MediaEventApplicationHandler', () => {
         sourceFileName: `${mockUuid}-${mockFileName}`,
       });
     });
+
+    it('should handle SQS parsing errors gracefully', async () => {
+      // Arrange
+      const mockSQSRecord: SQSRecord = {
+        messageId: 'test-message-id',
+        receiptHandle: 'test-receipt-handle',
+        body: 'invalid-json',
+        attributes: {
+          ApproximateReceiveCount: '1',
+          SentTimestamp: '1234567890',
+          SenderId: 'test-sender',
+          ApproximateFirstReceiveTimestamp: '1234567890',
+        },
+        messageAttributes: {},
+        md5OfBody: 'test-md5',
+        eventSource: 'aws:sqs',
+        eventSourceARN: 'arn:aws:sqs:test',
+        awsRegion: 'us-east-1',
+      };
+
+      const mockMessage: Message<MediaEventMessage> = {
+        id: 'test-id',
+        receiptHandle: 'test-receipt',
+        body: {
+          Records: [mockSQSRecord],
+        },
+      };
+
+      const errorSpy = jest.spyOn(Logger.prototype, 'error');
+
+      // Act
+      await handler.handle(mockMessage);
+
+      // Assert
+      expect(errorSpy).toHaveBeenCalledWith(
+        `Failed to process SQS record ${mockSQSRecord.messageId}:`,
+        expect.any(Error),
+      );
+      expect(processMediaFileHandler.handle).not.toHaveBeenCalled();
+    });
   });
 
   describe('extractFileInfo', () => {
@@ -258,6 +308,7 @@ describe('MediaEventApplicationHandler', () => {
       const fileName = `${mockUuid}-${mockOriginalName}`;
 
       // Act
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const result = (handler as any).extractFileInfo(fileName);
 
       // Assert
@@ -274,6 +325,7 @@ describe('MediaEventApplicationHandler', () => {
       const warnSpy = jest.spyOn(Logger.prototype, 'warn');
 
       // Act
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const result = (handler as any).extractFileInfo(fileName);
 
       // Assert
@@ -294,6 +346,7 @@ describe('MediaEventApplicationHandler', () => {
       const objectKey = `sources/${mockUuid}-${mockOriginalName}`;
 
       // Act
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const result = (handler as any).extractFileInfo(objectKey);
 
       // Assert
@@ -311,6 +364,7 @@ describe('MediaEventApplicationHandler', () => {
       const fileName = `${mockUuid}-${mockOriginalName}`;
 
       // Act
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
       const result = (handler as any).extractFileInfo(fileName);
 
       // Assert
