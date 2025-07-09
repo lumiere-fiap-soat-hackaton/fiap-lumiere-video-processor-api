@@ -1,0 +1,30 @@
+# Dependencies
+node_modules
+
+# Testing
+coverage
+
+# Build
+dist
+build
+out
+.next
+
+# Environment variables
+.env*
+
+# Misc
+.git
+.gitignore
+.DS_Store
+.idea
+.vscode
+*.log
+*.md
+.github
+README.md
+
+# Docker
+Dockerfile
+docker-compose.yml
+.dockerignore
