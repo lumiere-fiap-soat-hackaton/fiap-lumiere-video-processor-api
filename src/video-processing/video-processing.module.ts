@@ -15,7 +15,7 @@ import { VideoController } from '@app/video-processing/api/controllers/video.con
 import { IFileStorageService } from './application/services/file-storage.interface';
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';
 import { ConfigService } from '@nestjs/config';
-import { S3Client } from '@aws-sdk/client-s3';
+import { S3Client, S3ClientConfig } from '@aws-sdk/client-s3';
 import { GenerateSignedUploadUrlHandler } from './application/use-cases/generate-signed-upload-url/generate-signed-upload-url.handler';
 import { GenerateSignedDownloadUrlHandler } from './application/use-cases/generate-signed-download-url/generate-signed-download-url.handler';
 import { CqrsModule } from '@nestjs/cqrs';
@@ -35,13 +35,23 @@ const useCaseHandlers = [
     {
       provide: IFileStorageService,
       useFactory: (configService: ConfigService) => {
-        const s3Client = new S3Client({
+        const config: S3ClientConfig = {
           region: configService.get<string>('aws.region'),
-          credentials: {
+        };
+
+        console.log('🔧 S3 Configuration:', {
+          region: configService.get<string>('aws.region'),
+          bucketName: configService.get<string>('s3.bucketName'),
+        });
+
+        if (configService.get<string>('app.env') === 'development') {
+          config.credentials = {
             accessKeyId: configService.get<string>('aws.accessKeyId'),
             secretAccessKey: configService.get<string>('aws.secretAccessKey'),
-          },
-        });
+          };
+        }
+
+        const s3Client = new S3Client(config);
         return new S3StorageService(s3Client, configService);
       },
       inject: [ConfigService],

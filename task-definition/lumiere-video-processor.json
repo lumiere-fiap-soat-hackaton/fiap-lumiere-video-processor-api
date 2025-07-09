@@ -38,14 +38,6 @@
       },
       "secrets": [
         {
-          "name": "AWS_ACCESS_KEY_ID",
-          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/aws/AWS_ACCESS_KEY_ID"
-        },
-        {
-          "name": "AWS_SECRET_ACCESS_KEY",
-          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/aws/AWS_SECRET_ACCESS_KEY"
-        },
-        {
           "name": "AWS_S3_BUCKET_NAME",
           "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/s3/AWS_S3_BUCKET_NAME"
         },
@@ -60,6 +52,22 @@
         {
           "name": "DYNAMODB_REGION",
           "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/dynamodb/DYNAMODB_REGION"
+        },
+        {
+          "name": "SQS_ENDPOINT",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/sqs/SQS_ENDPOINT"
+        },
+        {
+          "name": "MEDIA_EVENTS_QUEUE",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/sqs/MEDIA_EVENTS_QUEUE_NAME"
+        },
+        {
+          "name": "MEDIA_PROCESS_QUEUE",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/sqs/MEDIA_PROCESS_QUEUE_NAME"
+        },
+        {
+          "name": "MEDIA_RESULT_QUEUE",
+          "valueFrom": "arn:aws:ssm:us-east-1:904106077871:parameter/fiap-lumiere/sqs/MEDIA_RESULT_QUEUE_NAME"
         }
       ]
     }
