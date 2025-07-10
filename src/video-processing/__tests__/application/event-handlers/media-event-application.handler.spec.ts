@@ -4,60 +4,54 @@ import { MediaEventApplicationHandler } from '../../../application/event-handler
 import { ProcessMediaFileHandler } from '../../../application/commands/video.handlers';
 import { Message } from '../../../domain/messaging/message-consumer.interface';
 import {
-  MediaEventMessage,
-  S3EventRecord,
-  SQSRecord,
-  S3EventMessage,
-} from '../../../domain/messaging/messages/media-event-message';
+  SQSMessageBody,
+  SQSMessageS3EventRecord,
+  SQSMessageS3Details,
+  SQSMessageS3Bucket,
+  SQSMessageS3Object,
+  SQSMessageUserIdentity,
+  SQSMessageRequestParameters,
+  SQSMessageResponseElements,
+} from '../../../domain/messaging/messages/sqs-message.interface';
 
 describe('MediaEventApplicationHandler', () => {
   let handler: MediaEventApplicationHandler;
   let processMediaFileHandler: jest.Mocked<ProcessMediaFileHandler>;
-  let loggerSpy: jest.SpyInstance;
-
-  // Helper function to create mock SQS record
-  const createMockSQSRecord = (s3Records: S3EventRecord[]): SQSRecord => {
-    const s3Event: S3EventMessage = {
-      Records: s3Records,
-    };
-
-    return {
-      messageId: 'test-message-id',
-      receiptHandle: 'test-receipt-handle',
-      body: JSON.stringify(s3Event),
-      attributes: {
-        ApproximateReceiveCount: '1',
-        SentTimestamp: '1234567890',
-        SenderId: 'test-sender',
-        ApproximateFirstReceiveTimestamp: '1234567890',
-      },
-      messageAttributes: {},
-      md5OfBody: 'test-md5',
-      eventSource: 'aws:sqs',
-      eventSourceARN: 'arn:aws:sqs:test',
-      awsRegion: 'us-east-1',
-    };
-  };
 
   // Helper function to create mock S3 record
-  const createMockS3Record = (objectKey: string): S3EventRecord => ({
+  const createMockS3Record = (objectKey: string): SQSMessageS3EventRecord => ({
     eventVersion: '2.1',
     eventSource: 'aws:s3',
     awsRegion: 'us-east-1',
     eventTime: '2025-01-01T00:00:00.000Z',
     eventName: 'ObjectCreated:Put',
+    userIdentity: {
+      principalId: 'test-principal',
+    } as SQSMessageUserIdentity,
+    requestParameters: {
+      sourceIPAddress: '127.0.0.1',
+    } as SQSMessageRequestParameters,
+    responseElements: {
+      'x-amz-request-id': 'test-request-id',
+      'x-amz-id-2': 'test-id-2',
+    } as SQSMessageResponseElements,
     s3: {
       s3SchemaVersion: '1.0',
+      configurationId: 'test-config',
       bucket: {
         name: 'test-bucket',
+        ownerIdentity: {
+          principalId: 'test-owner',
+        },
         arn: 'arn:aws:s3:::test-bucket',
-      },
+      } as SQSMessageS3Bucket,
       object: {
         key: objectKey,
         size: 1024,
         eTag: 'test-etag',
-      },
-    },
+        sequencer: 'test-sequencer',
+      } as SQSMessageS3Object,
+    } as SQSMessageS3Details,
   });
 
   beforeEach(async () => {
@@ -81,7 +75,7 @@ describe('MediaEventApplicationHandler', () => {
     processMediaFileHandler = module.get(ProcessMediaFileHandler);
 
     // Mock logger
-    loggerSpy = jest.spyOn(Logger.prototype, 'log').mockImplementation();
+    jest.spyOn(Logger.prototype, 'log').mockImplementation();
     jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     jest.spyOn(Logger.prototype, 'error').mockImplementation();
   });
@@ -98,13 +92,12 @@ describe('MediaEventApplicationHandler', () => {
       const mockObjectKey = `${mockUuid}-${mockFileName}`;
 
       const mockS3Record = createMockS3Record(mockObjectKey);
-      const mockSQSRecord = createMockSQSRecord([mockS3Record]);
 
-      const mockMessage: Message<MediaEventMessage> = {
+      const mockMessage: Message<SQSMessageBody> = {
         id: 'test-id',
         receiptHandle: 'test-receipt',
         body: {
-          Records: [mockSQSRecord],
+          Records: [mockS3Record],
         },
       };
 
@@ -119,9 +112,6 @@ describe('MediaEventApplicationHandler', () => {
         sourceFileKey: mockObjectKey,
         sourceFileName: mockObjectKey,
       });
-      expect(loggerSpy).toHaveBeenCalledWith(
-        `Successfully processed media event for file: ${mockObjectKey}`,
-      );
     });
 
     it('should process multiple S3 event records', async () => {
@@ -135,13 +125,12 @@ describe('MediaEventApplicationHandler', () => {
 
       const mockS3Record1 = createMockS3Record(mockObjectKey1);
       const mockS3Record2 = createMockS3Record(mockObjectKey2);
-      const mockSQSRecord = createMockSQSRecord([mockS3Record1, mockS3Record2]);
 
-      const mockMessage: Message<MediaEventMessage> = {
+      const mockMessage: Message<SQSMessageBody> = {
         id: 'test-id',
         receiptHandle: 'test-receipt',
         body: {
-          Records: [mockSQSRecord],
+          Records: [mockS3Record1, mockS3Record2],
         },
       };
 
@@ -173,17 +162,14 @@ describe('MediaEventApplicationHandler', () => {
       const mockObjectKey1 = `${mockUuid1}-${mockFileName1}`;
       const mockObjectKey2 = `${mockUuid2}-${mockFileName2}`;
 
-      // Create separate SQS records to test SQS-level failure recovery
       const mockS3Record1 = createMockS3Record(mockObjectKey1);
       const mockS3Record2 = createMockS3Record(mockObjectKey2);
-      const mockSQSRecord1 = createMockSQSRecord([mockS3Record1]);
-      const mockSQSRecord2 = createMockSQSRecord([mockS3Record2]);
 
-      const mockMessage: Message<MediaEventMessage> = {
+      const mockMessage: Message<SQSMessageBody> = {
         id: 'test-id',
         receiptHandle: 'test-receipt',
         body: {
-          Records: [mockSQSRecord1, mockSQSRecord2],
+          Records: [mockS3Record1, mockS3Record2],
         },
       };
 
@@ -197,9 +183,6 @@ describe('MediaEventApplicationHandler', () => {
 
       // Assert
       expect(processMediaFileHandler.handle).toHaveBeenCalledTimes(2);
-      expect(loggerSpy).toHaveBeenCalledWith(
-        `Successfully processed media event for file: ${mockObjectKey2}`,
-      );
     });
 
     it('should skip records without valid UUID', async () => {
@@ -207,13 +190,12 @@ describe('MediaEventApplicationHandler', () => {
       const mockObjectKey = 'invalid-filename.mp4';
 
       const mockS3Record = createMockS3Record(mockObjectKey);
-      const mockSQSRecord = createMockSQSRecord([mockS3Record]);
 
-      const mockMessage: Message<MediaEventMessage> = {
+      const mockMessage: Message<SQSMessageBody> = {
         id: 'test-id',
         receiptHandle: 'test-receipt',
         body: {
-          Records: [mockSQSRecord],
+          Records: [mockS3Record],
         },
       };
 
@@ -236,13 +218,12 @@ describe('MediaEventApplicationHandler', () => {
       const mockObjectKey = `sources/${mockUuid}-${mockFileName}`;
 
       const mockS3Record = createMockS3Record(mockObjectKey);
-      const mockSQSRecord = createMockSQSRecord([mockS3Record]);
 
-      const mockMessage: Message<MediaEventMessage> = {
+      const mockMessage: Message<SQSMessageBody> = {
         id: 'test-id',
         receiptHandle: 'test-receipt',
         body: {
-          Records: [mockSQSRecord],
+          Records: [mockS3Record],
         },
       };
 
@@ -257,46 +238,6 @@ describe('MediaEventApplicationHandler', () => {
         sourceFileKey: mockObjectKey,
         sourceFileName: `${mockUuid}-${mockFileName}`,
       });
-    });
-
-    it('should handle SQS parsing errors gracefully', async () => {
-      // Arrange
-      const mockSQSRecord: SQSRecord = {
-        messageId: 'test-message-id',
-        receiptHandle: 'test-receipt-handle',
-        body: 'invalid-json',
-        attributes: {
-          ApproximateReceiveCount: '1',
-          SentTimestamp: '1234567890',
-          SenderId: 'test-sender',
-          ApproximateFirstReceiveTimestamp: '1234567890',
-        },
-        messageAttributes: {},
-        md5OfBody: 'test-md5',
-        eventSource: 'aws:sqs',
-        eventSourceARN: 'arn:aws:sqs:test',
-        awsRegion: 'us-east-1',
-      };
-
-      const mockMessage: Message<MediaEventMessage> = {
-        id: 'test-id',
-        receiptHandle: 'test-receipt',
-        body: {
-          Records: [mockSQSRecord],
-        },
-      };
-
-      const errorSpy = jest.spyOn(Logger.prototype, 'error');
-
-      // Act
-      await handler.handle(mockMessage);
-
-      // Assert
-      expect(errorSpy).toHaveBeenCalledWith(
-        `Failed to process SQS record ${mockSQSRecord.messageId}:`,
-        expect.any(Error),
-      );
-      expect(processMediaFileHandler.handle).not.toHaveBeenCalled();
     });
   });
 
