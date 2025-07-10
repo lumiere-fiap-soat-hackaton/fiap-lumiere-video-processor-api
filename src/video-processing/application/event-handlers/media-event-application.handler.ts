@@ -1,6 +1,7 @@
 import {
   SQSMessageS3Details,
   SQSMessageS3EventRecord,
+  SQSMessageBody,
 } from '@app/video-processing/domain/messaging/messages/sqs-message.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import {
@@ -10,23 +11,70 @@ import {
 import { ProcessMediaFileHandler } from '../commands/video.handlers';
 
 @Injectable()
-export class MediaEventApplicationHandler implements MessageHandler {
+export class MediaEventApplicationHandler
+  implements MessageHandler<SQSMessageBody>
+{
   private readonly logger = new Logger(MediaEventApplicationHandler.name);
 
   constructor(
     private readonly processMediaFileHandler: ProcessMediaFileHandler,
   ) {}
 
-  async handle(message: Message): Promise<void> {
+  async handle(message: Message<SQSMessageBody>): Promise<void> {
     console.log(`-- Processing SQS records: ${JSON.stringify(message)}`);
 
+    // Extrair o body real que contém os Records
+    let actualBody: SQSMessageBody;
+
+    try {
+      // Se message.body tem um campo Body (JSON aninhado), parse novamente
+      if (
+        message.body &&
+        typeof message.body === 'object' &&
+        'Body' in message.body
+      ) {
+        const messageBodyWithNesting = message.body as unknown as {
+          Body: string;
+          [key: string]: unknown;
+        };
+        const nestedBody = messageBodyWithNesting.Body;
+        if (typeof nestedBody === 'string') {
+          actualBody = JSON.parse(nestedBody) as SQSMessageBody;
+        } else {
+          actualBody = nestedBody as SQSMessageBody;
+        }
+      } else {
+        // Se já tem Records diretamente
+        actualBody = message.body;
+      }
+    } catch (parseError) {
+      this.logger.error('Failed to parse nested message body:', parseError);
+      this.logger.error('Original message body:', message.body);
+      return;
+    }
+
+    // Verificar se actualBody.Records existe
+    if (
+      !actualBody ||
+      !actualBody.Records ||
+      !Array.isArray(actualBody.Records)
+    ) {
+      this.logger.error(
+        'Invalid message format: missing Records array',
+        actualBody,
+      );
+      return;
+    }
+
+    console.log(`-- Found ${actualBody.Records.length} records to process`);
+
     // Processar cada SQS record individualmente
-    for (const sqsRecord of message.body.Records) {
+    for (const sqsRecord of actualBody.Records) {
       console.log(`Processing Record: ${JSON.stringify(sqsRecord)}`);
       try {
         await this.processSQSRecord(sqsRecord);
       } catch (error) {
-        this.logger.error(`Failed to process SQS record ${sqsRecord}:`, error);
+        this.logger.error(`Failed to process SQS record:`, error);
         // Continuar processando outros records mesmo se um falhar
       }
     }
@@ -41,10 +89,7 @@ export class MediaEventApplicationHandler implements MessageHandler {
       console.log(`Processing S3 event: ${JSON.stringify(s3Event)}`);
       await this.processS3Record(s3Event);
     } catch (parseError) {
-      this.logger.error(
-        `Failed to parse SQS body for message ${sqsRecord}:`,
-        parseError,
-      );
+      this.logger.error(`Failed to parse SQS body for message:`, parseError);
       throw parseError;
     }
   }

@@ -5,6 +5,7 @@ import {
   ReceiveMessageCommand,
   DeleteMessageCommand,
   ReceiveMessageCommandOutput,
+  Message as SQSMessage,
 } from '@aws-sdk/client-sqs';
 import {
   MessageConsumer,
@@ -39,7 +40,7 @@ export class SqsMessageConsumer implements MessageConsumer {
     console.log(`Starting to consume messages from: ${queueUrl}`);
 
     // Start consuming for this specific queue
-    this.consumeQueue(queueUrl, queueName, handler);
+    void this.consumeQueue(queueUrl, queueName, handler);
   }
 
   stopConsuming(queueName?: string): void {
@@ -95,28 +96,57 @@ export class SqsMessageConsumer implements MessageConsumer {
 
   private async processMessage<T>(
     queueUrl: string,
-    sqsMessage: any,
+    sqsMessage: SQSMessage,
     handler: MessageHandler<T>,
   ): Promise<void> {
     try {
       console.log(`-- Received SQS message: ${JSON.stringify(sqsMessage)}`);
 
+      if (!sqsMessage.Body) {
+        throw new Error('SQS message body is empty');
+      }
+
+      // Parse do Body do SQS - pode ser um JSON duplo
+      let parsedBody: unknown;
+      try {
+        const firstParse: unknown = JSON.parse(sqsMessage.Body);
+        // Se o resultado for uma string, parse novamente (JSON duplo)
+        if (typeof firstParse === 'string') {
+          parsedBody = JSON.parse(firstParse);
+        } else {
+          parsedBody = firstParse;
+        }
+      } catch (parseError) {
+        console.error(`Failed to parse SQS message body:`, parseError);
+        console.error(`Original body:`, sqsMessage.Body);
+        throw parseError;
+      }
+
       const message: Message<T> = {
-        id: sqsMessage.MessageId,
-        body: JSON.parse(sqsMessage.Body),
-        receiptHandle: sqsMessage.ReceiptHandle,
+        id: sqsMessage.MessageId || '',
+        body: parsedBody as T,
+        receiptHandle: sqsMessage.ReceiptHandle || '',
       };
 
       console.log(`-- Processing message: ${JSON.stringify(message)}`);
 
       await handler.handle(message);
-      await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle);
+      await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle || '');
       console.log(`Message processed successfully: ${message.id}`);
     } catch (error) {
       console.error(
-        `Failed to process message ${sqsMessage.MessageId}:`,
+        `Failed to process message ${sqsMessage.MessageId || 'unknown'}:`,
         error,
       );
+      // Deletar a mensagem mesmo em caso de erro para evitar reprocessamento infinito
+      try {
+        await this.deleteMessage(queueUrl, sqsMessage.ReceiptHandle || '');
+      } catch (deleteError) {
+        console.error(
+          'Failed to delete message after processing error:',
+          deleteError,
+        );
+      }
     }
   }
 
