@@ -1,6 +1,15 @@
-import { Body, Controller, Get, HttpCode, Param, Post } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpCode,
+  Param,
+  Post,
+  Headers,
+} from '@nestjs/common';
 import {
   ApiBody,
+  ApiHeader,
   ApiOperation,
   ApiParam,
   ApiResponse,
@@ -36,11 +45,21 @@ export class VideoController {
   @ApiOperation({
     summary: 'Gera URL assinada para upload de vídeo',
   })
+  @ApiHeader({
+    name: 'x-user-id',
+    description: 'ID do usuário',
+    required: true,
+    schema: {
+      type: 'string',
+    },
+  })
   @ApiBody({ type: [GenerateSignedUploadUrlRequest] })
   async generateSignedUploadUrl(
+    @Headers('x-user-id') userId: string,
     @Body() files: GenerateSignedUploadUrlRequest[],
   ) {
     const command = new GenerateSignedUploadUrlCommand(
+      userId,
       files,
       VideoController.DEFAULT_URL_EXPIRATION_SECONDS,
     );
