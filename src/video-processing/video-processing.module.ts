@@ -17,6 +17,7 @@ import { VIDEO_REPOSITORY } from './domain/repositories/video.repository';
 import { MESSAGE_PUBLISHER } from './domain/messaging/message-publisher.interface';
 import { MESSAGE_CONSUMER } from './domain/messaging/message-consumer.interface';
 import { VideoController } from '@app/video-processing/api/controllers/video.controller';
+import { UserRecordsController } from '@app/video-processing/api/controllers/user-records.controller';
 import { IFileStorageService } from './application/services/file-storage.interface';
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';
 import { ConfigService } from '@nestjs/config';
@@ -94,7 +95,7 @@ const eventHandlers = [
     ...eventHandlers,
     ...useCaseHandlers,
   ],
-  controllers: [VideoController],
+  controllers: [VideoController, UserRecordsController],
   exports: [VIDEO_REPOSITORY, MESSAGE_PUBLISHER, MESSAGE_CONSUMER],
 })
 export class VideoProcessingModule {}
