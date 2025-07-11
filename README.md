@@ -7,6 +7,7 @@
 ![AWS](https://img.shields.io/badge/AWS-%23FF9900.svg?style=for-the-badge&logo=amazon-aws&logoColor=white)
 ![Jest](https://img.shields.io/badge/-jest-%23C21325?style=for-the-badge&logo=jest&logoColor=white)
 ![Docker](https://img.shields.io/badge/docker-%230db7ed.svg?style=for-the-badge&logo=docker&logoColor=white)
+[![Quality gate](https://sonarcloud.io/api/project_badges/quality_gate?project=lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api)](https://sonarcloud.io/summary/new_code?id=lumiere-fiap-soat-hackaton_fiap-lumiere-video-processor-api)
 
 **API robusta para processamento de vídeos com upload/download seguro via AWS S3**
 
