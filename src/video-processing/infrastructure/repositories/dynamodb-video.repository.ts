@@ -107,6 +107,7 @@ export class DynamoDbVideoRepository
       ExpressionAttributeValues: {
         ':id': String(id), // Explicitly convert to string to ensure correct type
       },
+      Limit: 1, // Ensure we only get one item since we're searching by unique ID
     });
 
     try {

@@ -100,6 +100,8 @@ describe('DynamoDbVideoRepository', () => {
         id: mockVideo.id,
         sourceFileKey: mockVideo.sourceFileKey,
         sourceFileName: mockVideo.sourceFileName,
+        resultFileKey: mockVideo.resultFileKey,
+        resultFileName: mockVideo.resultFileName,
         description: mockVideo.description,
         status: mockVideo.status,
         createdAt: mockVideo.createdAt.toISOString(),
@@ -108,7 +110,7 @@ describe('DynamoDbVideoRepository', () => {
       };
 
       mockDynamoClient.send.mockResolvedValue({
-        Item: dynamoItem,
+        Items: [dynamoItem],
       });
 
       const result = await repository.findById('test-id-123');
@@ -401,7 +403,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -410,7 +412,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: updatedAttributes,
@@ -454,7 +456,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -463,7 +465,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: updatedAttributes,
@@ -493,7 +495,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -502,7 +504,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: {
@@ -537,7 +539,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -546,7 +548,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce(new Error('Update failed'));
 
@@ -564,7 +566,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente (chamado duas vezes)
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -573,11 +575,11 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce(schemaError) // Primeiro update falha
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -586,7 +588,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({}); // Alternative update (PUT) succeeds
 
@@ -662,7 +664,7 @@ describe('DynamoDbVideoRepository', () => {
       };
 
       mockDynamoClient.send.mockResolvedValue({
-        Item: dynamoItem,
+        Items: [dynamoItem],
       });
 
       const result = await repository.findById('test-id-123');
@@ -721,7 +723,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -730,7 +732,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: {
@@ -765,7 +767,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -774,7 +776,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: {
@@ -808,7 +810,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -817,7 +819,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           // Sem Attributes
@@ -838,7 +840,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -847,7 +849,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({}); // PUT command success
 
@@ -880,7 +882,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -889,7 +891,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce(new Error('Alternative update failed'));
 
@@ -908,7 +910,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -917,7 +919,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({});
 
@@ -948,7 +950,7 @@ describe('DynamoDbVideoRepository', () => {
       };
 
       mockDynamoClient.send.mockResolvedValue({
-        Item: {
+        Items: [{
           id: completeVideo.id,
           sourceFileKey: completeVideo.sourceFileKey,
           sourceFileName: completeVideo.sourceFileName,
@@ -959,7 +961,7 @@ describe('DynamoDbVideoRepository', () => {
           createdAt: completeVideo.createdAt.toISOString(),
           updatedAt: completeVideo.updatedAt.toISOString(),
           userId: completeVideo.userId,
-        },
+        }],
       });
 
       const result = await repository.findById('test-id-123');
@@ -982,7 +984,7 @@ describe('DynamoDbVideoRepository', () => {
       };
 
       mockDynamoClient.send.mockResolvedValue({
-        Item: {
+        Items: [{
           id: videoWithoutOptionalFields.id,
           sourceFileKey: videoWithoutOptionalFields.sourceFileKey,
           sourceFileName: videoWithoutOptionalFields.sourceFileName,
@@ -992,7 +994,7 @@ describe('DynamoDbVideoRepository', () => {
           createdAt: videoWithoutOptionalFields.createdAt.toISOString(),
           updatedAt: videoWithoutOptionalFields.updatedAt.toISOString(),
           userId: videoWithoutOptionalFields.userId,
-        },
+        }],
       });
 
       const result = await repository.findById('test-id-123');
@@ -1030,7 +1032,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -1039,7 +1041,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce('String error'); // Erro não é um objeto Error
 
@@ -1054,7 +1056,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -1063,7 +1065,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce('String error'); // Erro não é um objeto Error
 
@@ -1082,7 +1084,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -1091,7 +1093,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: {
@@ -1152,7 +1154,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -1161,11 +1163,11 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce(schemaError) // Primeiro update falha com schema error
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -1174,7 +1176,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({}); // Alternative update (PUT) succeeds
 
@@ -1195,7 +1197,7 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
@@ -1204,7 +1206,7 @@ describe('DynamoDbVideoRepository', () => {
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockResolvedValueOnce({
           Attributes: {
@@ -1233,16 +1235,18 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
+            resultFileKey: mockVideo.resultFileKey,
+            resultFileName: mockVideo.resultFileName,
             description: mockVideo.description,
             status: mockVideo.status,
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce({ notAnError: 'This is not an Error object' });
 
@@ -1257,16 +1261,18 @@ describe('DynamoDbVideoRepository', () => {
       // Mock findById para retornar o vídeo existente
       mockDynamoClient.send
         .mockResolvedValueOnce({
-          Item: {
+          Items: [{
             id: mockVideo.id,
             sourceFileKey: mockVideo.sourceFileKey,
             sourceFileName: mockVideo.sourceFileName,
+            resultFileKey: mockVideo.resultFileKey,
+            resultFileName: mockVideo.resultFileName,
             description: mockVideo.description,
             status: mockVideo.status,
             createdAt: mockVideo.createdAt.toISOString(),
             updatedAt: mockVideo.updatedAt.toISOString(),
             userId: mockVideo.userId,
-          },
+          }],
         })
         .mockRejectedValueOnce({ notAnError: 'This is not an Error object' });
 
