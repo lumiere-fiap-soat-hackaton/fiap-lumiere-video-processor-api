@@ -8,7 +8,6 @@ import {
   VideoRepository,
   VIDEO_REPOSITORY,
 } from '../../domain/repositories/video.repository';
-import { VideoStatus } from '../../domain/entities/video.entity';
 import {
   ProcessMediaFileCommand,
   UpdateVideoStatusCommand,

@@ -98,7 +98,6 @@ describe('GetVideosByStatusHandler', () => {
     it('should handle different status values', async () => {
       const testCases = [
         VideoStatus.PENDING,
-        VideoStatus.PROCESSING,
         VideoStatus.COMPLETED,
         VideoStatus.FAILED,
       ];
@@ -141,7 +140,7 @@ describe('GetVideosByStatusHandler', () => {
     });
 
     it('should pass status from query to repository', async () => {
-      const specificStatus = VideoStatus.PROCESSING;
+      const specificStatus = VideoStatus.PENDING;
       mockVideoRepository.findByStatus.mockResolvedValue([]);
 
       const query = new GetVideosByStatusQuery(specificStatus);
@@ -232,7 +231,7 @@ describe('GetVideosByStatusHandler', () => {
     });
 
     it('should extract status from query correctly', async () => {
-      const status = VideoStatus.PROCESSING;
+      const status = VideoStatus.COMPLETED;
       mockVideoRepository.findByStatus.mockResolvedValue([mockVideo]);
 
       const query = new GetVideosByStatusQuery(status);

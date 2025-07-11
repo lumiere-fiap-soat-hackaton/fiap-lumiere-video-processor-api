@@ -21,7 +21,7 @@ export class VideoResponseDto {
 
   @ApiProperty({
     description: 'Video processing status',
-    enum: ['pending', 'processing', 'completed', 'failed'],
+    enum: ['pending', 'completed', 'failed'],
     example: 'completed',
   })
   status: string;

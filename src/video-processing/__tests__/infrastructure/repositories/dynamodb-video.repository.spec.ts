@@ -309,7 +309,6 @@ describe('DynamoDbVideoRepository', () => {
     it('should handle different video status values', async () => {
       const testCases = [
         VideoStatus.PENDING,
-        VideoStatus.PROCESSING,
         VideoStatus.COMPLETED,
         VideoStatus.FAILED,
       ];
