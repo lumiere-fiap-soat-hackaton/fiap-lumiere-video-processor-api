@@ -149,6 +149,28 @@ export class DynamoDbVideoRepository
   }
 
   async update(id: string, data: Partial<Video>): Promise<Video> {
+    // Validação básica
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid id provided for update');
+    }
+
+    if (!data || Object.keys(data).length === 0) {
+      throw new Error('No data provided for update');
+    }
+
+    // Log para debug
+    console.log(`-- Updating video with ID: ${id}`);
+    console.log(`-- Update data:`, JSON.stringify(data, null, 2));
+    console.log(`-- Table name: ${this.tableName}`);
+
+    // Verificar se o item existe antes de tentar atualizar
+    const existingVideo = await this.findById(id);
+    if (!existingVideo) {
+      throw new Error(`Video with id ${id} not found`);
+    }
+
+    console.log(`-- Video found in database: ${existingVideo.id}`);
+
     let updateExpression = 'SET #updatedAt = :updatedAt';
     const expressionAttributeNames: Record<string, string> = {
       '#updatedAt': 'updatedAt',
@@ -158,22 +180,45 @@ export class DynamoDbVideoRepository
         ':updatedAt': new Date().toISOString(),
       };
 
-    Object.keys(data).forEach((key) => {
-      if (key !== 'id' && key !== 'createdAt') {
-        updateExpression += `, #${key} = :${key}`;
-        expressionAttributeNames[`#${key}`] = key;
+    // Filtrar apenas campos válidos e não-undefined
+    const validFields = Object.keys(data).filter(
+      (key) =>
+        key !== 'id' &&
+        key !== 'createdAt' &&
+        data[key as keyof Video] !== undefined,
+    );
 
-        let value = data[key as keyof Video];
-        // Converter Date para string se necessário
-        if (value instanceof Date) {
-          value = value.toISOString();
-        }
+    validFields.forEach((key) => {
+      updateExpression += `, #${key} = :${key}`;
+      expressionAttributeNames[`#${key}`] = key;
+
+      let value = data[key as keyof Video];
+
+      // Converter Date para string se necessário
+      if (value instanceof Date) {
+        value = value.toISOString();
+      }
+
+      // Garantir que não seja undefined
+      if (value !== undefined) {
         expressionAttributeValues[`:${key}`] = value as
           | string
           | number
           | boolean;
       }
     });
+
+    // Se não há campos para atualizar além do updatedAt, apenas atualizar o timestamp
+    if (validFields.length === 0) {
+      console.log(
+        `No valid fields to update for video ${id}, only updating timestamp`,
+      );
+    }
+
+    // Log da operação DynamoDB
+    console.log(`-- DynamoDB Update Expression: ${updateExpression}`);
+    console.log(`-- Expression Attribute Names:`, expressionAttributeNames);
+    console.log(`-- Expression Attribute Values:`, expressionAttributeValues);
 
     const command = new UpdateCommand({
       TableName: this.tableName,
@@ -182,16 +227,91 @@ export class DynamoDbVideoRepository
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
       ReturnValues: 'ALL_NEW', // Retorna todos os atributos após a atualização
-      ConditionExpression: 'attribute_exists(id)', // Garante que o item existe
+      // Removendo ConditionExpression já que verificamos manualmente
     });
+
+    console.log(`-- DynamoDB Command Key:`, { id });
+    console.log(`-- DynamoDB Command Table:`, this.tableName);
 
     try {
       const result = await this.executeCommand<UpdateCommandOutput>(command);
+
+      if (!result.Attributes) {
+        throw new Error(`Failed to update video ${id}: No attributes returned`);
+      }
+
+      console.log(`-- Video updated successfully: ${id}`);
       return this.fromDynamoItem(result.Attributes as DynamoVideoItem);
     } catch (error) {
-      if (error.name === 'ConditionalCheckFailedException') {
-        throw new Error(`Video with id ${id} not found`);
+      // Se for erro de schema, tentar método alternativo
+      if (
+        error instanceof Error &&
+        error.message.includes('does not match the schema')
+      ) {
+        console.warn(
+          `-- Schema error detected, trying alternative update method for video ${id}`,
+        );
+        return this.updateAlternative(id, data);
       }
+
+      // Log detalhado do erro para debug
+      console.error('DynamoDB Update Error:', {
+        id,
+        tableName: this.tableName,
+        updateExpression,
+        expressionAttributeNames,
+        expressionAttributeValues,
+        keyProvided: { id },
+        error: error instanceof Error ? error.message : 'Unknown error',
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorCode: 'Unknown',
+      });
+
+      throw error;
+    }
+  }
+
+  async updateAlternative(id: string, data: Partial<Video>): Promise<Video> {
+    // Método alternativo usando PUT ao invés de UPDATE
+    // Usado como fallback se o método update não funcionar
+
+    console.log(`-- Using alternative update method for video ID: ${id}`);
+
+    // Buscar o vídeo existente
+    const existingVideo = await this.findById(id);
+    if (!existingVideo) {
+      throw new Error(`Video with id ${id} not found`);
+    }
+
+    // Merge dos dados existentes com os novos dados
+    const updatedVideo: Video = {
+      ...existingVideo,
+      ...data,
+      id: existingVideo.id, // Garantir que o ID não seja sobrescrito
+      createdAt: existingVideo.createdAt, // Garantir que createdAt não seja sobrescrito
+      updatedAt: new Date(), // Sempre atualizar o timestamp
+    };
+
+    // Converter para formato DynamoDB
+    const dynamoItem = this.toDynamoItem(updatedVideo);
+
+    const command = new PutCommand({
+      TableName: this.tableName,
+      Item: dynamoItem,
+    });
+
+    try {
+      await this.executeCommand<PutCommandOutput>(command);
+      console.log(
+        `-- Video updated successfully using alternative method: ${id}`,
+      );
+      return updatedVideo;
+    } catch (error) {
+      console.error('DynamoDB Alternative Update Error:', {
+        id,
+        tableName: this.tableName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
       throw error;
     }
   }
