@@ -398,36 +398,46 @@ describe('DynamoDbVideoRepository', () => {
         userId: mockVideo.userId,
       };
 
-      mockDynamoClient.send.mockResolvedValue({
-        Attributes: updatedAttributes,
-      });
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: updatedAttributes,
+        });
 
       const result = await repository.update('test-id-123', updateData);
 
       expect(result.description).toBe(updateData.description);
       expect(result.status).toBe(updateData.status);
-      expect(mockDynamoClient.send).toHaveBeenCalledTimes(1);
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2); // findById + update
     });
 
     it('should throw error when video not found', async () => {
       const updateData = { description: 'Updated description' };
-      const error = new Error('ConditionalCheckFailedException');
-      error.name = 'ConditionalCheckFailedException';
 
-      mockDynamoClient.send.mockRejectedValue(error);
+      // Mock findById para retornar null (vídeo não encontrado)
+      mockDynamoClient.send.mockResolvedValueOnce({});
 
-      // Ajustar para a mensagem que realmente é lançada
       await expect(
         repository.update('non-existent-id', updateData),
-      ).rejects.toThrow(
-        'DynamoDB operation failed: ConditionalCheckFailedException',
-      );
+      ).rejects.toThrow('Video with id non-existent-id not found');
     });
 
     it('should handle Date conversion in update with updatedAt field', async () => {
       const updateData = {
         description: 'Updated description',
-        updatedAt: new Date('2023-02-01T00:00:00.000Z'), // Use updatedAt em vez de createdAt
+        updatedAt: new Date('2023-02-01T00:00:00.000Z'),
       };
 
       const updatedAttributes = {
@@ -441,21 +451,35 @@ describe('DynamoDbVideoRepository', () => {
         userId: mockVideo.userId,
       };
 
-      mockDynamoClient.send.mockResolvedValue({
-        Attributes: updatedAttributes,
-      });
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: updatedAttributes,
+        });
 
       await repository.update('test-id-123', updateData);
 
-      expect(mockDynamoClient.send).toHaveBeenCalledWith(
-        expect.objectContaining({
-          input: expect.objectContaining({
-            ExpressionAttributeValues: expect.objectContaining({
-              ':updatedAt': expect.any(String), // updatedAt é sempre definido automaticamente
-              ':description': updateData.description,
-            }),
-          }),
-        }),
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2); // findById + update
+      const updateCall = mockDynamoClient.send.mock.calls[1][0];
+      expect(updateCall.input.ExpressionAttributeValues).toHaveProperty(
+        ':updatedAt',
+        expect.any(String),
+      );
+      expect(updateCall.input.ExpressionAttributeValues).toHaveProperty(
+        ':description',
+        updateData.description,
       );
     });
 
@@ -466,29 +490,110 @@ describe('DynamoDbVideoRepository', () => {
         description: 'Updated description',
       };
 
-      mockDynamoClient.send.mockResolvedValue({
-        Attributes: {
-          id: mockVideo.id,
-          sourceFileKey: mockVideo.sourceFileKey,
-          sourceFileName: mockVideo.sourceFileName,
-          description: updateData.description,
-          status: mockVideo.status,
-          createdAt: mockVideo.createdAt.toISOString(),
-          updatedAt: new Date().toISOString(),
-          userId: mockVideo.userId,
-        },
-      });
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: updateData.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: new Date().toISOString(),
+            userId: mockVideo.userId,
+          },
+        });
 
       await repository.update('test-id-123', updateData);
 
-      const call = mockDynamoClient.send.mock.calls[0][0];
-      expect(call.input.ExpressionAttributeValues).not.toHaveProperty(':id');
-      expect(call.input.ExpressionAttributeValues).not.toHaveProperty(
+      const updateCall = mockDynamoClient.send.mock.calls[1][0];
+      expect(updateCall.input.ExpressionAttributeValues).not.toHaveProperty(
+        ':id',
+      );
+      expect(updateCall.input.ExpressionAttributeValues).not.toHaveProperty(
         ':createdAt',
       );
-      expect(call.input.ExpressionAttributeValues).toHaveProperty(
+      expect(updateCall.input.ExpressionAttributeValues).toHaveProperty(
         ':description',
       );
+    });
+
+    it('should handle DynamoDB update errors', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce(new Error('Update failed'));
+
+      await expect(
+        repository.update('test-id-123', updateData),
+      ).rejects.toThrow('Update failed');
+    });
+
+    it('should use alternative update method when schema error occurs', async () => {
+      const updateData = { description: 'Updated description' };
+      const schemaError = new Error(
+        'The provided key element does not match the schema',
+      );
+
+      // Mock findById para retornar o vídeo existente (chamado duas vezes)
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce(schemaError) // Primeiro update falha
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({}); // Alternative update (PUT) succeeds
+
+      const result = await repository.update('test-id-123', updateData);
+
+      expect(result.description).toBe(updateData.description);
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(4); // findById + failed update + findById (alternative) + PUT
     });
   });
 
