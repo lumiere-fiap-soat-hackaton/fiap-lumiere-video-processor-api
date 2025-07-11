@@ -2,12 +2,12 @@ import { Inject, Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import {
   PutCommand,
-  GetCommand,
+  QueryCommand,
   ScanCommand,
   UpdateCommand,
   DeleteCommand,
   DynamoDBDocumentClient,
-  GetCommandOutput,
+  QueryCommandOutput,
   ScanCommandOutput,
   UpdateCommandOutput,
   PutCommandOutput,
@@ -93,15 +93,42 @@ export class DynamoDbVideoRepository
   }
 
   async findById(id: string): Promise<Video | null> {
-    const command = new GetCommand({
+    // Ensure id is a string and not undefined/null
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid id provided for findById');
+    }
+
+    console.log(`-- Finding video by ID: ${id}`);
+    console.log(`-- Table name: ${this.tableName}`);
+
+    const command = new QueryCommand({
       TableName: this.tableName,
-      Key: { id },
+      KeyConditionExpression: 'id = :id',
+      ExpressionAttributeValues: {
+        ':id': String(id), // Explicitly convert to string to ensure correct type
+      },
     });
 
-    const result = await this.executeCommand<GetCommandOutput>(command);
-    return result.Item
-      ? this.fromDynamoItem(result.Item as DynamoVideoItem)
-      : null;
+    try {
+      const result = await this.executeCommand<QueryCommandOutput>(command);
+
+      console.log(`-- DynamoDB Query Result:`, {
+        found: !!(result.Items && result.Items.length > 0),
+        itemCount: result.Items?.length || 0,
+        itemId: result.Items?.[0]?.id as string,
+      });
+
+      return result.Items && result.Items.length > 0
+        ? this.fromDynamoItem(result.Items[0] as DynamoVideoItem)
+        : null;
+    } catch (error) {
+      console.error('DynamoDB Query Error:', {
+        id,
+        tableName: this.tableName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
   }
 
   async findByUserId(userId: string): Promise<Video[]> {
@@ -222,7 +249,7 @@ export class DynamoDbVideoRepository
 
     const command = new UpdateCommand({
       TableName: this.tableName,
-      Key: { id },
+      Key: { id: String(id) }, // Explicitly convert to string
       UpdateExpression: updateExpression,
       ExpressionAttributeNames: expressionAttributeNames,
       ExpressionAttributeValues: expressionAttributeValues,
@@ -230,7 +257,7 @@ export class DynamoDbVideoRepository
       // Removendo ConditionExpression já que verificamos manualmente
     });
 
-    console.log(`-- DynamoDB Command Key:`, { id });
+    console.log(`-- DynamoDB Command Key:`, { id: String(id) });
     console.log(`-- DynamoDB Command Table:`, this.tableName);
 
     try {
@@ -317,9 +344,13 @@ export class DynamoDbVideoRepository
   }
 
   async delete(id: string): Promise<void> {
+    if (!id || typeof id !== 'string') {
+      throw new Error('Invalid id provided for delete');
+    }
+
     const command = new DeleteCommand({
       TableName: this.tableName,
-      Key: { id },
+      Key: { id: String(id) }, // Explicitly convert to string
     });
 
     await this.executeCommand<DeleteCommandOutput>(command);
