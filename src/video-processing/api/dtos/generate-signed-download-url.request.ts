@@ -1,3 +1,3 @@
 export class GenerateSignedDownloadUrlRequest {
-  fileName: string;
+  resultFileKey: string;
 }

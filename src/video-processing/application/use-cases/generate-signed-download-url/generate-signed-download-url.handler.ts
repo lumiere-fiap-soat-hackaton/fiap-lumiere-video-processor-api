@@ -16,10 +16,10 @@ export class GenerateSignedDownloadUrlHandler
   async execute(
     command: GenerateSignedDownloadUrlCommand,
   ): Promise<GenerateSignedDownloadUrlOutput> {
-    const { fileName, expiresIn } = command;
+    const { resultFileKey, expiresIn } = command;
 
     const signedUrl = await this.fileStorageService.getDownloadSignedUrl({
-      fileName,
+      resultFileKey,
       expiresIn,
     });
 

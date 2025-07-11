@@ -30,10 +30,10 @@ describe('GenerateSignedDownloadUrlHandler', () => {
     describe('When requesting a signed download URL', () => {
       it('Then should return a valid signed download URL', async () => {
         // Given
-        const fileName = 'video.mp4';
+        const resultFileKey = 'video.mp4';
         const expiresIn = 300;
         const command = new GenerateSignedDownloadUrlCommand(
-          fileName,
+          resultFileKey,
           expiresIn,
         );
         const expectedUrl =
@@ -48,7 +48,7 @@ describe('GenerateSignedDownloadUrlHandler', () => {
         expect(result).toBeDefined();
         expect(result.signedUrl).toBe(expectedUrl);
         expect(fileStorageService.getDownloadSignedUrl).toHaveBeenCalledWith({
-          fileName: 'video.mp4',
+          resultFileKey: 'video.mp4',
           expiresIn: 300,
         });
       });
@@ -57,10 +57,10 @@ describe('GenerateSignedDownloadUrlHandler', () => {
     describe('When file storage service throws an error', () => {
       it('Then should propagate the error', async () => {
         // Given
-        const fileName = 'nonexistent.mp4';
+        const resultFileKey = 'nonexistent.mp4';
         const expiresIn = 300;
         const command = new GenerateSignedDownloadUrlCommand(
-          fileName,
+          resultFileKey,
           expiresIn,
         );
         const error = new Error('File not found');

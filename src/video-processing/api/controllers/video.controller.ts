@@ -54,11 +54,15 @@ export class VideoController {
 
   @Post('download-url')
   @ApiOperation({
-    summary: 'Gera URL assinada para download de vídeo',
+    summary: 'Gera URL assinada para download das imagens processadas',
+    description:
+      'O usuário deve enviar o resultFileKey para obter a URL de download',
   })
-  async getDownloadUrl(@Body() { fileName }: GenerateSignedDownloadUrlRequest) {
+  async getDownloadUrl(
+    @Body() { resultFileKey }: GenerateSignedDownloadUrlRequest,
+  ) {
     const command = new GenerateSignedDownloadUrlCommand(
-      fileName,
+      resultFileKey,
       VideoController.DEFAULT_URL_EXPIRATION_SECONDS,
     );
 
@@ -66,7 +70,7 @@ export class VideoController {
       GenerateSignedDownloadUrlCommand,
       GenerateSignedDownloadUrlOutput
     >(command);
-    return { fileName, signedUrl: output.signedUrl };
+    return { resultFileKey, signedUrl: output.signedUrl };
   }
 
   @Get()
