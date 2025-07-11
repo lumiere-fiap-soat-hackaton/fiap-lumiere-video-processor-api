@@ -681,4 +681,598 @@ describe('DynamoDbVideoRepository', () => {
       });
     });
   });
+
+  describe('update - additional edge cases', () => {
+    it('should throw error when id is not provided', async () => {
+      const updateData = { description: 'Updated description' };
+
+      await expect(repository.update('', updateData)).rejects.toThrow(
+        'Invalid id provided for update',
+      );
+    });
+
+    it('should throw error when id is not a string', async () => {
+      const updateData = { description: 'Updated description' };
+
+      await expect(repository.update(null as any, updateData)).rejects.toThrow(
+        'Invalid id provided for update',
+      );
+    });
+
+    it('should throw error when no data is provided', async () => {
+      await expect(repository.update('test-id', {})).rejects.toThrow(
+        'No data provided for update',
+      );
+    });
+
+    it('should throw error when data is null', async () => {
+      await expect(repository.update('test-id', null as any)).rejects.toThrow(
+        'No data provided for update',
+      );
+    });
+
+    it('should handle update with only timestamp when no valid fields', async () => {
+      const updateData = {
+        id: 'should-be-filtered',
+        createdAt: new Date(),
+        undefinedField: undefined,
+      };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: new Date().toISOString(),
+            userId: mockVideo.userId,
+          },
+        });
+
+      const result = await repository.update('test-id-123', updateData);
+
+      expect(result).toBeDefined();
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2);
+
+      // Verificar se a expressão de update apenas atualiza o timestamp
+      const updateCall = mockDynamoClient.send.mock.calls[1][0];
+      expect(updateCall.input.UpdateExpression).toBe(
+        'SET #updatedAt = :updatedAt',
+      );
+    });
+
+    it('should handle update with Date objects', async () => {
+      const updateData = {
+        updatedAt: new Date('2023-02-01T00:00:00.000Z'),
+      };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: updateData.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        });
+
+      const result = await repository.update('test-id-123', updateData);
+
+      expect(result).toBeDefined();
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2);
+
+      // Verificar se a data foi convertida para string
+      const updateCall = mockDynamoClient.send.mock.calls[1][0];
+      expect(updateCall.input.ExpressionAttributeValues).toHaveProperty(
+        ':updatedAt',
+        updateData.updatedAt.toISOString(),
+      );
+    });
+
+    it('should handle update failure with no attributes returned', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          // Sem Attributes
+        });
+
+      await expect(
+        repository.update('test-id-123', updateData),
+      ).rejects.toThrow(
+        'Failed to update video test-id-123: No attributes returned',
+      );
+    });
+  });
+
+  describe('updateAlternative', () => {
+    it('should update video using alternative method', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({}); // PUT command success
+
+      const result = await repository.updateAlternative(
+        'test-id-123',
+        updateData,
+      );
+
+      expect(result.description).toBe(updateData.description);
+      expect(result.id).toBe(mockVideo.id);
+      expect(result.createdAt).toEqual(mockVideo.createdAt);
+      expect(result.updatedAt).toBeInstanceOf(Date);
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2);
+    });
+
+    it('should throw error when video not found for alternative update', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar null
+      mockDynamoClient.send.mockResolvedValueOnce({});
+
+      await expect(
+        repository.updateAlternative('non-existent-id', updateData),
+      ).rejects.toThrow('Video with id non-existent-id not found');
+    });
+
+    it('should handle alternative update errors', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce(new Error('Alternative update failed'));
+
+      await expect(
+        repository.updateAlternative('test-id-123', updateData),
+      ).rejects.toThrow('Alternative update failed');
+    });
+
+    it('should preserve original ID and createdAt in alternative update', async () => {
+      const updateData = {
+        id: 'should-not-overwrite',
+        createdAt: new Date('2024-01-01T00:00:00.000Z'),
+        description: 'Updated description',
+      };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({});
+
+      const result = await repository.updateAlternative(
+        'test-id-123',
+        updateData,
+      );
+
+      expect(result.id).toBe(mockVideo.id); // ID original preservado
+      expect(result.createdAt).toEqual(mockVideo.createdAt); // createdAt original preservado
+      expect(result.description).toBe(updateData.description); // Novo valor aplicado
+    });
+  });
+
+  describe('toDynamoItem and fromDynamoItem - edge cases', () => {
+    it('should handle video with all optional fields', async () => {
+      const completeVideo: Video = {
+        id: 'test-id-123',
+        sourceFileKey: 'uploads/test-video.mp4',
+        sourceFileName: 'test-video.mp4',
+        resultFileKey: 'results/processed-video.mp4',
+        resultFileName: 'processed-video.mp4',
+        description: 'Test video description',
+        status: VideoStatus.COMPLETED,
+        createdAt: new Date('2023-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2023-01-02T00:00:00.000Z'),
+        userId: 'user-123',
+      };
+
+      mockDynamoClient.send.mockResolvedValue({
+        Item: {
+          id: completeVideo.id,
+          sourceFileKey: completeVideo.sourceFileKey,
+          sourceFileName: completeVideo.sourceFileName,
+          resultFileKey: completeVideo.resultFileKey,
+          resultFileName: completeVideo.resultFileName,
+          description: completeVideo.description,
+          status: completeVideo.status,
+          createdAt: completeVideo.createdAt.toISOString(),
+          updatedAt: completeVideo.updatedAt.toISOString(),
+          userId: completeVideo.userId,
+        },
+      });
+
+      const result = await repository.findById('test-id-123');
+
+      expect(result).toEqual(completeVideo);
+    });
+
+    it('should handle video with undefined optional fields', async () => {
+      const videoWithoutOptionalFields: Video = {
+        id: 'test-id-123',
+        sourceFileKey: 'uploads/test-video.mp4',
+        sourceFileName: 'test-video.mp4',
+        resultFileKey: undefined,
+        resultFileName: undefined,
+        description: 'Test video description',
+        status: VideoStatus.PENDING,
+        createdAt: new Date('2023-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2023-01-01T00:00:00.000Z'),
+        userId: 'user-123',
+      };
+
+      mockDynamoClient.send.mockResolvedValue({
+        Item: {
+          id: videoWithoutOptionalFields.id,
+          sourceFileKey: videoWithoutOptionalFields.sourceFileKey,
+          sourceFileName: videoWithoutOptionalFields.sourceFileName,
+          // resultFileKey e resultFileName omitidos
+          description: videoWithoutOptionalFields.description,
+          status: videoWithoutOptionalFields.status,
+          createdAt: videoWithoutOptionalFields.createdAt.toISOString(),
+          updatedAt: videoWithoutOptionalFields.updatedAt.toISOString(),
+          userId: videoWithoutOptionalFields.userId,
+        },
+      });
+
+      const result = await repository.findById('test-id-123');
+
+      expect(result).toEqual(videoWithoutOptionalFields);
+    });
+  });
+
+  describe('error handling and edge cases', () => {
+    it('should handle findByUserId with database error', async () => {
+      mockDynamoClient.send.mockRejectedValue(new Error('Database error'));
+
+      await expect(repository.findByUserId('user-123')).rejects.toThrow(
+        'Database error',
+      );
+    });
+
+    it('should handle findByStatus with database error', async () => {
+      mockDynamoClient.send.mockRejectedValue(new Error('Database error'));
+
+      await expect(
+        repository.findByStatus(VideoStatus.PENDING),
+      ).rejects.toThrow('Database error');
+    });
+
+    it('should handle findAll with database error', async () => {
+      mockDynamoClient.send.mockRejectedValue(new Error('Database error'));
+
+      await expect(repository.findAll()).rejects.toThrow('Database error');
+    });
+
+    it('should handle error with non-Error object in update', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce('String error'); // Erro não é um objeto Error
+
+      await expect(
+        repository.update('test-id-123', updateData),
+      ).rejects.toThrow('DynamoDB operation failed: Unknown error');
+    });
+
+    it('should handle error with non-Error object in updateAlternative', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce('String error'); // Erro não é um objeto Error
+
+      await expect(
+        repository.updateAlternative('test-id-123', updateData),
+      ).rejects.toThrow('DynamoDB operation failed: Unknown error');
+    });
+
+    it('should handle update with undefined value in data', async () => {
+      const updateData = {
+        description: 'Updated description',
+        resultFileKey: undefined,
+        status: VideoStatus.COMPLETED,
+      };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: updateData.description,
+            status: updateData.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: new Date().toISOString(),
+            userId: mockVideo.userId,
+          },
+        });
+
+      const result = await repository.update('test-id-123', updateData);
+
+      expect(result.description).toBe(updateData.description);
+      expect(result.status).toBe(updateData.status);
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2);
+
+      // Verificar que apenas os campos não-undefined foram incluídos
+      const updateCall = mockDynamoClient.send.mock.calls[1][0];
+      expect(updateCall.input.ExpressionAttributeValues).toHaveProperty(
+        ':description',
+        updateData.description,
+      );
+      expect(updateCall.input.ExpressionAttributeValues).toHaveProperty(
+        ':status',
+        updateData.status,
+      );
+      expect(updateCall.input.ExpressionAttributeValues).not.toHaveProperty(
+        ':resultFileKey',
+      );
+    });
+
+    it('should handle create with wrapped error message', async () => {
+      const videoData = {
+        sourceFileKey: 'uploads/test-video.mp4',
+        sourceFileName: 'test-video.mp4',
+        description: 'Test video description',
+        userId: 'user-123',
+      };
+
+      const originalError = new Error('Original DynamoDB error');
+      mockDynamoClient.send.mockRejectedValue(originalError);
+
+      await expect(repository.create(videoData)).rejects.toThrow(
+        'Failed to create video: Error: DynamoDB operation failed: Original DynamoDB error',
+      );
+    });
+
+    it('should handle schema error that includes specific text', async () => {
+      const updateData = { description: 'Updated description' };
+      const schemaError = new Error(
+        'ValidationException: The provided key element does not match the schema',
+      );
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce(schemaError) // Primeiro update falha com schema error
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({}); // Alternative update (PUT) succeeds
+
+      const result = await repository.update('test-id-123', updateData);
+
+      expect(result.description).toBe(updateData.description);
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(4);
+    });
+
+    it('should handle update with different value types', async () => {
+      const updateData = {
+        description: 'Updated description',
+        status: VideoStatus.COMPLETED,
+        // Simulando um campo que pode ser boolean ou number
+        userId: 'user-123',
+      };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockResolvedValueOnce({
+          Attributes: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: updateData.description,
+            status: updateData.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: new Date().toISOString(),
+            userId: updateData.userId,
+          },
+        });
+
+      const result = await repository.update('test-id-123', updateData);
+
+      expect(result.description).toBe(updateData.description);
+      expect(result.status).toBe(updateData.status);
+      expect(result.userId).toBe(updateData.userId);
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(2);
+    });
+
+    it('should handle update with non-Error object in updateAlternative error logging', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce({ notAnError: 'This is not an Error object' });
+
+      await expect(
+        repository.updateAlternative('test-id-123', updateData),
+      ).rejects.toThrow('DynamoDB operation failed: Unknown error');
+    });
+
+    it('should handle update with non-Error object in update error logging', async () => {
+      const updateData = { description: 'Updated description' };
+
+      // Mock findById para retornar o vídeo existente
+      mockDynamoClient.send
+        .mockResolvedValueOnce({
+          Item: {
+            id: mockVideo.id,
+            sourceFileKey: mockVideo.sourceFileKey,
+            sourceFileName: mockVideo.sourceFileName,
+            description: mockVideo.description,
+            status: mockVideo.status,
+            createdAt: mockVideo.createdAt.toISOString(),
+            updatedAt: mockVideo.updatedAt.toISOString(),
+            userId: mockVideo.userId,
+          },
+        })
+        .mockRejectedValueOnce({ notAnError: 'This is not an Error object' });
+
+      await expect(
+        repository.update('test-id-123', updateData),
+      ).rejects.toThrow('DynamoDB operation failed: Unknown error');
+    });
+  });
 });
