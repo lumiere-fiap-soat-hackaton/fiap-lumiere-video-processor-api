@@ -26,10 +26,12 @@ import { GenerateSignedDownloadUrlHandler } from './application/use-cases/genera
 import { CqrsModule } from '@nestjs/cqrs';
 import { GetAllVideosHandler } from './application/use-cases/get-all-videos/get-all-videos.handler';
 import { GetVideosByUserHandler } from './application/use-cases/get-videos-by-user/get-videos-by-user.handler';
+import { GetVideosByStatusHandler } from './application/use-cases/get-videos-by-status/get-videos-by-status.handler';
 
 const useCaseHandlers = [
   GetAllVideosHandler,
   GetVideosByUserHandler,
+  GetVideosByStatusHandler,
   GenerateSignedUploadUrlHandler,
   GenerateSignedDownloadUrlHandler,
 ];

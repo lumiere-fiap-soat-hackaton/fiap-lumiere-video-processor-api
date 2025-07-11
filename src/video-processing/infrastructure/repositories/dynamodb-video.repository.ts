@@ -121,6 +121,23 @@ export class DynamoDbVideoRepository
     return items.map((item) => this.fromDynamoItem(item as DynamoVideoItem));
   }
 
+  async findByStatus(status: string): Promise<Video[]> {
+    const command = new ScanCommand({
+      TableName: this.tableName,
+      FilterExpression: '#status = :status',
+      ExpressionAttributeNames: {
+        '#status': 'status',
+      },
+      ExpressionAttributeValues: {
+        ':status': status,
+      },
+    });
+
+    const result = await this.executeCommand<ScanCommandOutput>(command);
+    const items = result.Items || [];
+    return items.map((item) => this.fromDynamoItem(item as DynamoVideoItem));
+  }
+
   async findAll(): Promise<Video[]> {
     const command = new ScanCommand({
       TableName: this.tableName,

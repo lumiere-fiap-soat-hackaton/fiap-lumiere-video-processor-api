@@ -187,6 +187,164 @@ describe('DynamoDbVideoRepository', () => {
     });
   });
 
+  describe('findByStatus', () => {
+    it('should return videos for specific status', async () => {
+      const dynamoItems = [
+        {
+          id: mockVideo.id,
+          sourceFileKey: mockVideo.sourceFileKey,
+          sourceFileName: mockVideo.sourceFileName,
+          description: mockVideo.description,
+          status: mockVideo.status,
+          createdAt: mockVideo.createdAt.toISOString(),
+          updatedAt: mockVideo.updatedAt.toISOString(),
+          userId: mockVideo.userId,
+        },
+      ];
+
+      mockDynamoClient.send.mockResolvedValue({
+        Items: dynamoItems,
+      });
+
+      const result = await repository.findByStatus(VideoStatus.COMPLETED);
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toEqual(mockVideo);
+      expect(mockDynamoClient.send).toHaveBeenCalledWith(
+        expect.objectContaining({
+          input: expect.objectContaining({
+            FilterExpression: '#status = :status',
+            ExpressionAttributeNames: { '#status': 'status' },
+            ExpressionAttributeValues: { ':status': VideoStatus.COMPLETED },
+          }),
+        }),
+      );
+    });
+
+    it('should return empty array when no videos found with status', async () => {
+      mockDynamoClient.send.mockResolvedValue({
+        Items: [],
+      });
+
+      const result = await repository.findByStatus(VideoStatus.PENDING);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should handle undefined Items in response', async () => {
+      mockDynamoClient.send.mockResolvedValue({});
+
+      const result = await repository.findByStatus(VideoStatus.FAILED);
+
+      expect(result).toEqual([]);
+    });
+
+    it('should return multiple videos with same status', async () => {
+      const video1 = {
+        ...mockVideo,
+        id: 'video-1',
+        status: VideoStatus.COMPLETED,
+      };
+      const video2 = {
+        ...mockVideo,
+        id: 'video-2',
+        userId: 'user-456',
+        status: VideoStatus.COMPLETED,
+      };
+      const video3 = {
+        ...mockVideo,
+        id: 'video-3',
+        description: 'Another video',
+        status: VideoStatus.COMPLETED,
+      };
+
+      const dynamoItems = [
+        {
+          id: video1.id,
+          sourceFileKey: video1.sourceFileKey,
+          sourceFileName: video1.sourceFileName,
+          description: video1.description,
+          status: video1.status,
+          createdAt: video1.createdAt.toISOString(),
+          updatedAt: video1.updatedAt.toISOString(),
+          userId: video1.userId,
+        },
+        {
+          id: video2.id,
+          sourceFileKey: video2.sourceFileKey,
+          sourceFileName: video2.sourceFileName,
+          description: video2.description,
+          status: video2.status,
+          createdAt: video2.createdAt.toISOString(),
+          updatedAt: video2.updatedAt.toISOString(),
+          userId: video2.userId,
+        },
+        {
+          id: video3.id,
+          sourceFileKey: video3.sourceFileKey,
+          sourceFileName: video3.sourceFileName,
+          description: video3.description,
+          status: video3.status,
+          createdAt: video3.createdAt.toISOString(),
+          updatedAt: video3.updatedAt.toISOString(),
+          userId: video3.userId,
+        },
+      ];
+
+      mockDynamoClient.send.mockResolvedValue({
+        Items: dynamoItems,
+      });
+
+      const result = await repository.findByStatus(VideoStatus.COMPLETED);
+
+      expect(result).toHaveLength(3);
+      expect(result[0]).toEqual(video1);
+      expect(result[1]).toEqual(video2);
+      expect(result[2]).toEqual(video3);
+      expect(
+        result.every((video) => video.status === VideoStatus.COMPLETED),
+      ).toBe(true);
+    });
+
+    it('should handle different video status values', async () => {
+      const testCases = [
+        VideoStatus.PENDING,
+        VideoStatus.PROCESSING,
+        VideoStatus.COMPLETED,
+        VideoStatus.FAILED,
+      ];
+
+      mockDynamoClient.send.mockResolvedValue({
+        Items: [],
+      });
+
+      for (const status of testCases) {
+        await repository.findByStatus(status);
+
+        expect(mockDynamoClient.send).toHaveBeenCalledWith(
+          expect.objectContaining({
+            input: expect.objectContaining({
+              FilterExpression: '#status = :status',
+              ExpressionAttributeNames: { '#status': 'status' },
+              ExpressionAttributeValues: { ':status': status },
+            }),
+          }),
+        );
+      }
+
+      expect(mockDynamoClient.send).toHaveBeenCalledTimes(testCases.length);
+    });
+
+    it('should handle database errors', async () => {
+      const error = new Error('Database connection failed');
+      mockDynamoClient.send.mockRejectedValue(error);
+
+      await expect(
+        repository.findByStatus(VideoStatus.COMPLETED),
+      ).rejects.toThrow('Database connection failed');
+    });
+  });
+
   describe('findAll', () => {
     it('should return all videos', async () => {
       const dynamoItems = [
