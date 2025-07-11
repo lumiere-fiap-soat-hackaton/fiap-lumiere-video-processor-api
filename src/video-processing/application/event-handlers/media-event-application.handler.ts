@@ -73,33 +73,49 @@ export class MediaEventApplicationHandler implements MessageHandler {
     this.logger.log(`Successfully processed media event for file: ${fileName}`);
   }
 
+  // videos/56d92b5e-b539-49ff-8ddb-33c3ffed5e2e--loucura.mp4
+
   private extractFileInfo(objectKey: string): {
     fileName: string;
     uuid: string;
     originalFileName: string;
   } {
-    // Extrair apenas o nome do arquivo (remover "sources/")
-    const fileName = objectKey.split('/').pop() || objectKey;
+    // Dividir o objectKey em partes
+    const parts = objectKey.split('/');
 
-    // Padrão UUID: 8-4-4-4-12 caracteres hexadecimais
-    const uuidRegex =
-      /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(.+)$/i;
-    const match = fileName.match(uuidRegex);
-
-    if (match) {
+    if (parts.length < 2 || parts[0] !== 'videos') {
+      this.logger.warn(`Invalid object key format: ${objectKey}`);
       return {
-        fileName,
-        uuid: match[1],
-        originalFileName: match[2],
+        fileName: objectKey,
+        uuid: '',
+        originalFileName: objectKey,
       };
     }
 
-    // Fallback se não conseguir extrair UUID
-    this.logger.warn(`Could not extract UUID from: ${fileName}`);
+    // O nome do arquivo está na última parte: /videos/{UUID--fileName}
+    const fileName = parts[parts.length - 1];
+
+    // Extrair UUID e nome original do formato: {UUID}--{originalFileName}
+    const fileNamePattern =
+      /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})--(.+)$/i;
+    const match = fileName.match(fileNamePattern);
+
+    if (!match) {
+      this.logger.warn(`Could not extract UUID from filename: ${fileName}`);
+      return {
+        fileName,
+        uuid: '',
+        originalFileName: fileName,
+      };
+    }
+
+    const uuid = match[1];
+    const originalFileName = match[2];
+
     return {
       fileName,
-      uuid: '',
-      originalFileName: fileName,
+      uuid,
+      originalFileName,
     };
   }
 }
