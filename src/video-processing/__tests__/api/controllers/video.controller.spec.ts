@@ -57,7 +57,8 @@ describe('VideoController - BDD Tests', () => {
         commandBus.execute.mockResolvedValue(mockOutput);
 
         // When
-        const result = await controller.generateSignedUploadUrl(files);
+        const userId = 'test-user-id';
+        const result = await controller.generateSignedUploadUrl(userId, files);
 
         // Then
         expect(result).toBeDefined();
@@ -98,7 +99,8 @@ describe('VideoController - BDD Tests', () => {
         commandBus.execute.mockResolvedValue(mockOutput);
 
         // When
-        const result = await controller.generateSignedUploadUrl(files);
+        const userId = 'test-user-id';
+        const result = await controller.generateSignedUploadUrl(userId, files);
 
         // Then
         expect(result).toBeDefined();
@@ -129,9 +131,10 @@ describe('VideoController - BDD Tests', () => {
         commandBus.execute.mockRejectedValue(error);
 
         // When & Then
-        await expect(controller.generateSignedUploadUrl(files)).rejects.toThrow(
-          'Command execution failed',
-        );
+        const userId = 'test-user-id';
+        await expect(
+          controller.generateSignedUploadUrl(userId, files),
+        ).rejects.toThrow('Command execution failed');
       });
     });
   });
