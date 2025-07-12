@@ -1,46 +1,57 @@
+import {
+  SQSMessageS3Details,
+  SQSMessageS3EventRecord,
+} from '@app/video-processing/domain/messaging/messages/sqs-message.interface';
 import { Injectable, Logger } from '@nestjs/common';
 import {
-  MessageHandler,
   Message,
+  MessageHandler,
 } from '../../domain/messaging/message-consumer.interface';
-import {
-  MediaEventMessage,
-  S3EventRecord,
-} from '../../domain/messaging/messages/media-event-message';
 import { ProcessMediaFileHandler } from '../commands/video.handlers';
 
 @Injectable()
-export class MediaEventApplicationHandler
-  implements MessageHandler<MediaEventMessage>
-{
+export class MediaEventApplicationHandler implements MessageHandler {
   private readonly logger = new Logger(MediaEventApplicationHandler.name);
 
   constructor(
     private readonly processMediaFileHandler: ProcessMediaFileHandler,
   ) {}
 
-  async handle(message: Message<MediaEventMessage>): Promise<void> {
-    this.logger.log(
-      `Processing ${message.body.Records.length} S3 event records`,
-    );
+  async handle(message: Message): Promise<void> {
+    console.log(`-- Processing SQS records: ${JSON.stringify(message)}`);
 
-    // Processar cada record individualmente
-    for (const record of message.body.Records) {
+    // Processar cada SQS record individualmente
+    for (const sqsRecord of message.body.Records) {
+      console.log(`Processing Record: ${JSON.stringify(sqsRecord)}`);
       try {
-        await this.processRecord(record);
+        await this.processSQSRecord(sqsRecord);
       } catch (error) {
-        this.logger.error(
-          `Failed to process record for ${record.s3.object.key}:`,
-          error,
-        );
+        this.logger.error(`Failed to process SQS record ${sqsRecord}:`, error);
         // Continuar processando outros records mesmo se um falhar
       }
     }
   }
 
-  private async processRecord(record: S3EventRecord): Promise<void> {
-    const { object: s3Object } = record.s3;
-    const objectKey = s3Object.key;
+  private async processSQSRecord(
+    sqsRecord: SQSMessageS3EventRecord,
+  ): Promise<void> {
+    try {
+      // Parse do body do SQS que contém o S3 event
+      const s3Event = sqsRecord.s3;
+      console.log(`Processing S3 event: ${JSON.stringify(s3Event)}`);
+      await this.processS3Record(s3Event);
+    } catch (parseError) {
+      this.logger.error(
+        `Failed to parse SQS body for message ${sqsRecord}:`,
+        parseError,
+      );
+      throw parseError;
+    }
+  }
+
+  private async processS3Record(record: SQSMessageS3Details): Promise<void> {
+    const objectKey = record.object.key;
+    console.log(`-- Processing S3 object: ${objectKey}`);
 
     // Extrair informações do arquivo
     const { fileName, uuid: userId } = this.extractFileInfo(objectKey);
@@ -49,6 +60,8 @@ export class MediaEventApplicationHandler
       this.logger.warn(`Could not extract user ID from file: ${objectKey}`);
       return;
     }
+
+    console.log(`-- Processing file: ${fileName} for user: ${userId}`);
 
     // Executar comando de processamento
     await this.processMediaFileHandler.handle({
@@ -60,33 +73,49 @@ export class MediaEventApplicationHandler
     this.logger.log(`Successfully processed media event for file: ${fileName}`);
   }
 
+  // videos/56d92b5e-b539-49ff-8ddb-33c3ffed5e2e--loucura.mp4
+
   private extractFileInfo(objectKey: string): {
     fileName: string;
     uuid: string;
     originalFileName: string;
   } {
-    // Extrair apenas o nome do arquivo (remover "sources/")
-    const fileName = objectKey.split('/').pop() || objectKey;
+    // Dividir o objectKey em partes
+    const parts = objectKey.split('/');
 
-    // Padrão UUID: 8-4-4-4-12 caracteres hexadecimais
-    const uuidRegex =
-      /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-(.+)$/i;
-    const match = fileName.match(uuidRegex);
-
-    if (match) {
+    if (parts.length < 2 || parts[0] !== 'videos') {
+      this.logger.warn(`Invalid object key format: ${objectKey}`);
       return {
-        fileName,
-        uuid: match[1],
-        originalFileName: match[2],
+        fileName: objectKey,
+        uuid: '',
+        originalFileName: objectKey,
       };
     }
 
-    // Fallback se não conseguir extrair UUID
-    this.logger.warn(`Could not extract UUID from: ${fileName}`);
+    // O nome do arquivo está na última parte: /videos/{UUID--fileName}
+    const fileName = parts[parts.length - 1];
+
+    // Extrair UUID e nome original do formato: {UUID}--{originalFileName}
+    const fileNamePattern =
+      /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})--(.+)$/i;
+    const match = fileName.match(fileNamePattern);
+
+    if (!match) {
+      this.logger.warn(`Could not extract UUID from filename: ${fileName}`);
+      return {
+        fileName,
+        uuid: '',
+        originalFileName: fileName,
+      };
+    }
+
+    const uuid = match[1];
+    const originalFileName = match[2];
+
     return {
       fileName,
-      uuid: '',
-      originalFileName: fileName,
+      uuid,
+      originalFileName,
     };
   }
 }

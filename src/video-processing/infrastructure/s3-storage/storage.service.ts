@@ -1,7 +1,6 @@
 import { IFileStorageService } from '@app/video-processing/application/services/file-storage.interface';
 import {
   GetObjectCommand,
-  HeadObjectCommand,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3';
@@ -41,14 +40,14 @@ export class S3StorageService implements IFileStorageService {
   }
 
   async getDownloadSignedUrl(params: {
-    fileName: string;
+    resultFileKey: string;
     expiresIn: number;
   }): Promise<string> {
-    const { fileName, expiresIn } = params;
+    const { resultFileKey, expiresIn } = params;
 
     const command = new GetObjectCommand({
       Bucket: this.bucketName,
-      Key: `${this.VIDEO_FOLDER}/${fileName}`,
+      Key: resultFileKey,
     });
 
     const signedUrl = await getSignedUrl(this.client, command, {

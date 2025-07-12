@@ -17,6 +17,7 @@ import { VIDEO_REPOSITORY } from './domain/repositories/video.repository';
 import { MESSAGE_PUBLISHER } from './domain/messaging/message-publisher.interface';
 import { MESSAGE_CONSUMER } from './domain/messaging/message-consumer.interface';
 import { VideoController } from '@app/video-processing/api/controllers/video.controller';
+import { UserRecordsController } from '@app/video-processing/api/controllers/user-records.controller';
 import { IFileStorageService } from './application/services/file-storage.interface';
 import { S3StorageService } from './infrastructure/s3-storage/storage.service';
 import { ConfigService } from '@nestjs/config';
@@ -26,10 +27,12 @@ import { GenerateSignedDownloadUrlHandler } from './application/use-cases/genera
 import { CqrsModule } from '@nestjs/cqrs';
 import { GetAllVideosHandler } from './application/use-cases/get-all-videos/get-all-videos.handler';
 import { GetVideosByUserHandler } from './application/use-cases/get-videos-by-user/get-videos-by-user.handler';
+import { GetVideosByStatusHandler } from './application/use-cases/get-videos-by-status/get-videos-by-status.handler';
 
 const useCaseHandlers = [
   GetAllVideosHandler,
   GetVideosByUserHandler,
+  GetVideosByStatusHandler,
   GenerateSignedUploadUrlHandler,
   GenerateSignedDownloadUrlHandler,
 ];
@@ -92,7 +95,7 @@ const eventHandlers = [
     ...eventHandlers,
     ...useCaseHandlers,
   ],
-  controllers: [VideoController],
+  controllers: [VideoController, UserRecordsController],
   exports: [VIDEO_REPOSITORY, MESSAGE_PUBLISHER, MESSAGE_CONSUMER],
 })
 export class VideoProcessingModule {}

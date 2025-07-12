@@ -1,10 +1,12 @@
-export interface Message<T = any> {
+import { SQSMessageBody } from './messages/sqs-message.interface';
+
+export interface Message<T = SQSMessageBody> {
   id: string;
   body: T;
   receiptHandle: string;
 }
 
-export interface MessageHandler<T = any> {
+export interface MessageHandler<T = SQSMessageBody> {
   handle(message: Message<T>): Promise<void>;
 }
 

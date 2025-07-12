@@ -141,7 +141,7 @@ describe('VideoController - BDD Tests', () => {
       it('Then should return a valid signed download URL', async () => {
         // Given
         const request: GenerateSignedDownloadUrlRequest = {
-          fileName: 'video.mp4',
+          resultFileKey: 'video.mp4',
         };
 
         const mockOutput = new GenerateSignedDownloadUrlOutput(
@@ -156,7 +156,7 @@ describe('VideoController - BDD Tests', () => {
         // Then
         expect(result).toBeDefined();
         expect(result).toEqual({
-          fileName: 'video.mp4',
+          resultFileKey: 'video.mp4',
           signedUrl: 'https://s3.amazonaws.com/bucket/video.mp4?signature',
         });
         expect(commandBus.execute).toHaveBeenCalledTimes(1);
@@ -167,7 +167,7 @@ describe('VideoController - BDD Tests', () => {
       it('Then should propagate the error', async () => {
         // Given
         const request: GenerateSignedDownloadUrlRequest = {
-          fileName: 'nonexistent.mp4',
+          resultFileKey: 'nonexistent.mp4',
         };
 
         const error = new Error('File not found');

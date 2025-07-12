@@ -16,11 +16,15 @@ export class GenerateSignedUploadUrlHandler
   async execute(
     command: GenerateSignedUploadUrlCommand,
   ): Promise<GenerateSignedUploadUrlOutput> {
-    const { files, expiresIn } = command;
+    const { userId, files, expiresIn } = command;
 
     const signedUrls = await Promise.all(
       files.map((file) =>
-        this.getSignedUrlObject(file.fileName, file.contentType, expiresIn),
+        this.getSignedUrlObject(
+          `${userId}--${file.fileName}`,
+          file.contentType,
+          expiresIn,
+        ),
       ),
     );
 

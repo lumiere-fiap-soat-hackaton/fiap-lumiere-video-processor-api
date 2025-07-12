@@ -82,7 +82,7 @@ describe('ProcessMediaFileHandler', () => {
         userId: command.userId,
         sourceFileKey: command.sourceFileKey,
         sourceFileName: command.sourceFileName,
-        status: VideoStatus.PROCESSING,
+        status: VideoStatus.PENDING,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -152,7 +152,7 @@ describe('ProcessMediaFileHandler', () => {
         userId: command.userId,
         sourceFileKey: command.sourceFileKey,
         sourceFileName: command.sourceFileName,
-        status: VideoStatus.PROCESSING,
+        status: VideoStatus.PENDING,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -198,7 +198,7 @@ describe('ProcessMediaFileHandler', () => {
         userId: command.userId,
         sourceFileKey: command.sourceFileKey,
         sourceFileName: command.sourceFileName,
-        status: VideoStatus.PROCESSING,
+        status: VideoStatus.PENDING,
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -362,7 +362,6 @@ describe('UpdateVideoStatusHandler', () => {
       // Arrange
       const testCases = [
         VideoStatus.PENDING,
-        VideoStatus.PROCESSING,
         VideoStatus.COMPLETED,
         VideoStatus.FAILED,
       ];

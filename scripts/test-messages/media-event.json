@@ -1,38 +1,20 @@
 {
-  "Records": [
-    { 
-      "eventVersion": "2.1",
-      "eventSource": "aws:s3",
-      "awsRegion": "us-east-1",
-      "eventTime": "2025-06-29T23:16:24.172Z",
-      "eventName": "ObjectCreated:Put",
-      "userIdentity": {
-        "principalId": "AWS:AROA5FAHL52XQK2EZIE3V:user3746009=wesley.sangalli@gmail.com"
-      },
-      "requestParameters": {
-        "sourceIPAddress": "179.222.176.138"
-      },
-      "responseElements": {
-        "x-amz-request-id": "FCRVNMKSB7JXZGGX",
-        "x-amz-id-2": "ZHYxJfE9Rm6IVIgw3HjJL+UsTffNeGywb/A3KiNafLoDSrjs46kvZGlU4mNztx6+x9ii2VoovB788LOkjw9zrf+LGWs/KNNL"
-      },
-      "s3": {
-        "s3SchemaVersion": "1.0",
-        "configurationId": "tf-s3-queue-20250629231139971900000001",
-        "bucket": {
-          "name": "fiap-lumiere-bucket",
-          "ownerIdentity": {
-            "principalId": "A3I2PFK18SGSC"
-          },
-          "arn": "arn:aws:s3:::fiap-lumiere-bucket"
-        },
-        "object": {
-          "key": "sources/69f3efe6-d06b-47f3-9c02-2f42657dcfaa-NyanCat.mp4",
-          "size": 6364915,
-          "eTag": "8f577f24142f49f8800875bf94a06915", 
-          "sequencer": "006861C948135B230F"
-        }
-      }
-    }
-  ]
+   "Records": [
+	  {
+		 "messageId": "07bf8778-a5e9-4fac-9b66-0636a1a1c994",
+		 "receiptHandle": "AQEBf1dPoW1OlYgN5Ftx70F7Y/YpRjpEMnFawie+TRFeFSdLE+eOx8l3gX4GcqtVaFuyYJ8fqzVNCCUFq2175hhesWgTX+teptASQuPkDRNE06KDmv0A43cugUdkS2sesiW7t8FsB9+fDX3U7rUcLuGgUfkn9pCJp98MsB69I24olTUqo5pbmvugTqFrqbiKvqq0UwSF8SQ78Xz4J9uvhTTE4T1eWWfScdWl8lNt/QodANPM/Dst+UruQPXZthJjoywbAMhARdsA51D8wVab+Rr9yTNLk7M6QuIbI3tN2bfFWwW6mC9upVHwQMHnmmiBy4tzFTdh0KofLfOVpBcwTy0+PmGl3KORbmCb7rkNSbCDfURXwHqXs37slOiqRZ7dFrbAXol5ojJWMzx/DSRI+PaZzf46Zvq2dbHTZHyTMEq6m9Y=",
+		 "body": "{\"Records\":[{\"eventVersion\":\"2.1\",\"eventSource\":\"aws:s3\",\"awsRegion\":\"us-east-1\",\"eventTime\":\"2025-06-29T23:16:24.172Z\",\"eventName\":\"ObjectCreated:Put\",\"userIdentity\":{\"principalId\":\"AWS:AROA5FAHL52XQK2EZIE3V:user3746009=wesley.sangalli@gmail.com\"},\"requestParameters\":{\"sourceIPAddress\":\"179.222.176.138\"},\"responseElements\":{\"x-amz-request-id\":\"FCRVNMKSB7JXZGGX\",\"x-amz-id-2\":\"ZHYxJfE9Rm6IVIgw3HjJL+UsTffNeGywb/A3KiNafLoDSrjs46kvZGlU4mNztx6+x9ii2VoovB788LOkjw9zrf+LGWs/KNNL\"},\"s3\":{\"s3SchemaVersion\":\"1.0\",\"configurationId\":\"tf-s3-queue-20250629231139971900000001\",\"bucket\":{\"name\":\"fiap-lumiere-bucket\",\"ownerIdentity\":{\"principalId\":\"A3I2PFK18SGSC\"},\"arn\":\"arn:aws:s3:::fiap-lumiere-bucket\"},\"object\":{\"key\":\"sources/69f3efe6-d06b-47f3-9c02-2f42657dcfaa-NyanCat.mp4\",\"size\":6364915,\"eTag\":\"8f577f24142f49f8800875bf94a06915\",\"sequencer\":\"006861C948135B230F\"}}}]}",
+		 "attributes": {
+			"ApproximateReceiveCount": "1",
+			"SentTimestamp": "1751238985165",
+			"SenderId": "AROA4R74ZO52XAB5OD7T4:S3-PROD-END",
+			"ApproximateFirstReceiveTimestamp": "1751238985166"
+		 },
+		 "messageAttributes": {},
+		 "md5OfBody": "4e18259387884d66fe3dc31ef95ad072",
+		 "eventSource": "aws:sqs",
+		 "eventSourceARN": "arn:aws:sqs:us-east-1:904106077871:fiap-lumiere-source-files-events-queue",
+		 "awsRegion": "us-east-1"
+	  }
+   ]
 }

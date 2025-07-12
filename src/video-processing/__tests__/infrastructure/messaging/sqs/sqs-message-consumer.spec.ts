@@ -204,7 +204,7 @@ describe('SqsMessageConsumer', () => {
       deleteMessageSpy.mockRestore();
     });
 
-    it('should handle processing errors and still delete message', async () => {
+    it('should handle processing errors and not delete message', async () => {
       const mockMessage = {
         MessageId: 'test-message-id',
         Body: JSON.stringify({ test: 'data' }),
@@ -228,10 +228,8 @@ describe('SqsMessageConsumer', () => {
         'Failed to process message test-message-id:',
         expect.any(Error),
       );
-      expect(deleteMessageSpy).toHaveBeenCalledWith(
-        queueUrl,
-        'test-receipt-handle',
-      );
+      // Should NOT delete message when there's an error
+      expect(deleteMessageSpy).not.toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
       deleteMessageSpy.mockRestore();
@@ -258,10 +256,8 @@ describe('SqsMessageConsumer', () => {
         'Failed to process message test-message-id:',
         expect.any(Error),
       );
-      expect(deleteMessageSpy).toHaveBeenCalledWith(
-        queueUrl,
-        'test-receipt-handle',
-      );
+      // Should NOT delete message when there's a JSON parsing error
+      expect(deleteMessageSpy).not.toHaveBeenCalled();
 
       consoleErrorSpy.mockRestore();
       deleteMessageSpy.mockRestore();

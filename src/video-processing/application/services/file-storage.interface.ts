@@ -6,11 +6,11 @@ export interface IFileStorageService {
   }): Promise<string>;
 
   getDownloadSignedUrl(params: {
-    fileName: string;
+    resultFileKey: string;
     expiresIn: number;
   }): Promise<string>;
 
-  fileExists(fileName: string): Promise<boolean>;
+  fileExists(resultFileKey: string): Promise<boolean>;
 }
 
 export const IFileStorageService = Symbol('IFileStorageService');
