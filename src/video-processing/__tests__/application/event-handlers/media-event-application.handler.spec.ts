@@ -89,7 +89,7 @@ describe('MediaEventApplicationHandler', () => {
       // Arrange
       const mockUuid = '123e4567-e89b-12d3-a456-426614174000';
       const mockFileName = 'video.mp4';
-      const mockObjectKey = `${mockUuid}-${mockFileName}`;
+      const mockObjectKey = `${mockUuid}--${mockFileName}`;
 
       const mockS3Record = createMockS3Record(mockObjectKey);
 
@@ -120,8 +120,8 @@ describe('MediaEventApplicationHandler', () => {
       const mockUuid2 = '987e6543-e21b-32d1-a654-246615174111';
       const mockFileName1 = 'video1.mp4';
       const mockFileName2 = 'video2.mp4';
-      const mockObjectKey1 = `${mockUuid1}-${mockFileName1}`;
-      const mockObjectKey2 = `${mockUuid2}-${mockFileName2}`;
+      const mockObjectKey1 = `${mockUuid1}--${mockFileName1}`;
+      const mockObjectKey2 = `${mockUuid2}--${mockFileName2}`;
 
       const mockS3Record1 = createMockS3Record(mockObjectKey1);
       const mockS3Record2 = createMockS3Record(mockObjectKey2);
@@ -159,8 +159,8 @@ describe('MediaEventApplicationHandler', () => {
       const mockUuid2 = '987e6543-e21b-32d1-a654-246615174111';
       const mockFileName1 = 'video1.mp4';
       const mockFileName2 = 'video2.mp4';
-      const mockObjectKey1 = `${mockUuid1}-${mockFileName1}`;
-      const mockObjectKey2 = `${mockUuid2}-${mockFileName2}`;
+      const mockObjectKey1 = `${mockUuid1}--${mockFileName1}`;
+      const mockObjectKey2 = `${mockUuid2}--${mockFileName2}`;
 
       const mockS3Record1 = createMockS3Record(mockObjectKey1);
       const mockS3Record2 = createMockS3Record(mockObjectKey2);
@@ -206,7 +206,7 @@ describe('MediaEventApplicationHandler', () => {
 
       // Assert
       expect(warnSpy).toHaveBeenCalledWith(
-        `Could not extract user ID from file: ${mockObjectKey}`,
+        `Could not extract user ID from videos path: ${mockObjectKey}`,
       );
       expect(processMediaFileHandler.handle).not.toHaveBeenCalled();
     });
@@ -215,7 +215,7 @@ describe('MediaEventApplicationHandler', () => {
       // Arrange
       const mockUuid = '123e4567-e89b-12d3-a456-426614174000';
       const mockFileName = 'video.mp4';
-      const mockObjectKey = `sources/${mockUuid}-${mockFileName}`;
+      const mockObjectKey = `sources/${mockUuid}--${mockFileName}`;
 
       const mockS3Record = createMockS3Record(mockObjectKey);
 
@@ -236,7 +236,7 @@ describe('MediaEventApplicationHandler', () => {
       expect(processMediaFileHandler.handle).toHaveBeenCalledWith({
         userId: mockUuid,
         sourceFileKey: mockObjectKey,
-        sourceFileName: `${mockUuid}-${mockFileName}`,
+        sourceFileName: `${mockUuid}--${mockFileName}`,
       });
     });
   });
@@ -246,7 +246,7 @@ describe('MediaEventApplicationHandler', () => {
       // Arrange
       const mockUuid = '123e4567-e89b-12d3-a456-426614174000';
       const mockOriginalName = 'my-video.mp4';
-      const fileName = `${mockUuid}-${mockOriginalName}`;
+      const fileName = `${mockUuid}--${mockOriginalName}`;
 
       // Act
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -276,7 +276,7 @@ describe('MediaEventApplicationHandler', () => {
         originalFileName: fileName,
       });
       expect(warnSpy).toHaveBeenCalledWith(
-        `Could not extract UUID from: ${fileName}`,
+        `Could not extract user ID from videos path: ${fileName}`,
       );
     });
 
@@ -284,7 +284,7 @@ describe('MediaEventApplicationHandler', () => {
       // Arrange
       const mockUuid = '123e4567-e89b-12d3-a456-426614174000';
       const mockOriginalName = 'video.mp4';
-      const objectKey = `sources/${mockUuid}-${mockOriginalName}`;
+      const objectKey = `sources/${mockUuid}--${mockOriginalName}`;
 
       // Act
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
@@ -292,7 +292,7 @@ describe('MediaEventApplicationHandler', () => {
 
       // Assert
       expect(result).toEqual({
-        fileName: `${mockUuid}-${mockOriginalName}`,
+        fileName: `${mockUuid}--${mockOriginalName}`,
         uuid: mockUuid,
         originalFileName: mockOriginalName,
       });
@@ -302,7 +302,7 @@ describe('MediaEventApplicationHandler', () => {
       // Arrange
       const mockUuid = '123E4567-E89B-12D3-A456-426614174000';
       const mockOriginalName = 'video.mp4';
-      const fileName = `${mockUuid}-${mockOriginalName}`;
+      const fileName = `${mockUuid}--${mockOriginalName}`;
 
       // Act
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
