@@ -26,7 +26,10 @@ export class MediaEventApplicationHandler implements MessageHandler {
       try {
         await this.processSQSRecord(sqsRecord);
       } catch (error) {
-        this.logger.error(`Failed to process SQS record ${sqsRecord}:`, error);
+        this.logger.error(
+          `Failed to process SQS record ${JSON.stringify(sqsRecord)}:`,
+          error,
+        );
         // Continuar processando outros records mesmo se um falhar
       }
     }
@@ -42,7 +45,7 @@ export class MediaEventApplicationHandler implements MessageHandler {
       await this.processS3Record(s3Event);
     } catch (parseError) {
       this.logger.error(
-        `Failed to parse SQS body for message ${sqsRecord}:`,
+        `Failed to parse SQS body for message ${JSON.stringify(sqsRecord)}:`,
         parseError,
       );
       throw parseError;
@@ -80,11 +83,19 @@ export class MediaEventApplicationHandler implements MessageHandler {
     uuid: string;
     originalFileName: string;
   } {
-    // Dividir o objectKey em partes
-    const parts = objectKey.split('/');
+    // Extrair o nome do arquivo (remover prefixos como sources/, videos/, etc.)
+    const fileName = objectKey.includes('/')
+      ? objectKey.split('/').pop() || objectKey
+      : objectKey;
 
-    if (parts.length < 2 || parts[0] !== 'videos') {
-      this.logger.warn(`Invalid object key format: ${objectKey}`);
+    // Extrair UUID e nome original do formato esperado pela aplicação: {UUID}--{originalFileName}
+    const fileNamePattern = /^(.+)--(.+)$/;
+    const match = fileName.match(fileNamePattern);
+
+    if (!match) {
+      this.logger.warn(
+        `Could not extract user ID from videos path: ${fileName}`,
+      );
       return {
         fileName: objectKey,
         uuid: '',
@@ -92,25 +103,20 @@ export class MediaEventApplicationHandler implements MessageHandler {
       };
     }
 
-    // O nome do arquivo está na última parte: /videos/{UUID--fileName}
-    const fileName = parts[parts.length - 1];
-
-    // Extrair UUID e nome original do formato: {UUID}--{originalFileName}
-    const fileNamePattern =
-      /^([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})--(.+)$/i;
-    const match = fileName.match(fileNamePattern);
-
-    if (!match) {
-      this.logger.warn(`Could not extract UUID from filename: ${fileName}`);
-      return {
-        fileName,
-        uuid: '',
-        originalFileName: fileName,
-      };
-    }
-
-    const uuid = match[1];
+    const uuidPart = match[1];
     const originalFileName = match[2];
+
+    // Extrair apenas o UUID da parte inicial (remover prefixo se houver)
+    const uuidMatch = uuidPart.match(
+      /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$/i,
+    );
+    const uuid = uuidMatch ? uuidMatch[1] : '';
+
+    if (!uuid) {
+      this.logger.warn(
+        `Could not extract user ID from videos path: ${fileName}`,
+      );
+    }
 
     return {
       fileName,
