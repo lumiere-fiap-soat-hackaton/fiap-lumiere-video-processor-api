@@ -49,18 +49,6 @@ export class DynamoDbVideoRepository
     super(dynamoDb, configService.get<string>('dynamoDb.tableName', 'videos'));
   }
 
-  async onModuleInit() {
-    // const found = await this.findAll();
-    // console.log(found);
-    // const created = await this.create({
-    //   title: 'Sample Video',
-    //   description: 'This is a sample video description.',
-    //   url: 'https://example.com/sample-video.mp4',
-    //   status: 'pending',
-    // });
-    // console.log(`Sample video created with ID: ${created.id}`);
-  }
-
   async create(
     videoData: Omit<Video, 'id' | 'createdAt' | 'updatedAt' | 'status'>,
   ): Promise<Video> {
@@ -73,8 +61,6 @@ export class DynamoDbVideoRepository
       updatedAt: now,
     };
 
-    console.log(`-- Creating video with ID: ${video.id}`);
-
     // Converter para formato DynamoDB
     const dynamoItem = this.toDynamoItem(video);
 
@@ -86,7 +72,6 @@ export class DynamoDbVideoRepository
 
       await this.executeCommand<PutCommandOutput>(command);
     } catch (error) {
-      console.error(`Error creating video with ID ${video.id}:`, error);
       throw new Error(`Failed to create video: ${error}`);
     }
     return video;
@@ -97,9 +82,6 @@ export class DynamoDbVideoRepository
     if (!id || typeof id !== 'string') {
       throw new Error('Invalid id provided for findById');
     }
-
-    console.log(`-- Finding video by ID: ${id}`);
-    console.log(`-- Table name: ${this.tableName}`);
 
     const command = new QueryCommand({
       TableName: this.tableName,
@@ -112,12 +94,6 @@ export class DynamoDbVideoRepository
 
     try {
       const result = await this.executeCommand<QueryCommandOutput>(command);
-
-      console.log(`-- DynamoDB Query Result:`, {
-        found: !!(result.Items && result.Items.length > 0),
-        itemCount: result.Items?.length || 0,
-        itemId: result.Items?.[0]?.id as string,
-      });
 
       return result.Items && result.Items.length > 0
         ? this.fromDynamoItem(result.Items[0] as DynamoVideoItem)
@@ -186,18 +162,11 @@ export class DynamoDbVideoRepository
       throw new Error('No data provided for update');
     }
 
-    // Log para debug
-    console.log(`-- Updating video with ID: ${id}`);
-    console.log(`-- Update data:`, JSON.stringify(data, null, 2));
-    console.log(`-- Table name: ${this.tableName}`);
-
     // Verificar se o item existe antes de tentar atualizar
     const existingVideo = await this.findById(id);
     if (!existingVideo) {
       throw new Error(`Video with id ${id} not found`);
     }
-
-    console.log(`-- Video found in database: ${existingVideo.id}`);
 
     let updateExpression = 'SET #updatedAt = :updatedAt';
     const expressionAttributeNames: Record<string, string> = {
@@ -213,6 +182,7 @@ export class DynamoDbVideoRepository
       (key) =>
         key !== 'id' &&
         key !== 'createdAt' &&
+        key !== 'updatedAt' && // Não incluir updatedAt dos dados de entrada
         data[key as keyof Video] !== undefined,
     );
 
@@ -238,15 +208,8 @@ export class DynamoDbVideoRepository
 
     // Se não há campos para atualizar além do updatedAt, apenas atualizar o timestamp
     if (validFields.length === 0) {
-      console.log(
-        `No valid fields to update for video ${id}, only updating timestamp`,
-      );
+      // Apenas atualizando timestamp quando não há outros campos para atualizar
     }
-
-    // Log da operação DynamoDB
-    console.log(`-- DynamoDB Update Expression: ${updateExpression}`);
-    console.log(`-- Expression Attribute Names:`, expressionAttributeNames);
-    console.log(`-- Expression Attribute Values:`, expressionAttributeValues);
 
     const command = new UpdateCommand({
       TableName: this.tableName,
@@ -258,9 +221,6 @@ export class DynamoDbVideoRepository
       // Removendo ConditionExpression já que verificamos manualmente
     });
 
-    console.log(`-- DynamoDB Command Key:`, { id: String(id) });
-    console.log(`-- DynamoDB Command Table:`, this.tableName);
-
     try {
       const result = await this.executeCommand<UpdateCommandOutput>(command);
 
@@ -268,7 +228,6 @@ export class DynamoDbVideoRepository
         throw new Error(`Failed to update video ${id}: No attributes returned`);
       }
 
-      console.log(`-- Video updated successfully: ${id}`);
       return this.fromDynamoItem(result.Attributes as DynamoVideoItem);
     } catch (error) {
       // Se for erro de schema, tentar método alternativo
@@ -276,24 +235,9 @@ export class DynamoDbVideoRepository
         error instanceof Error &&
         error.message.includes('does not match the schema')
       ) {
-        console.warn(
-          `-- Schema error detected, trying alternative update method for video ${id}`,
-        );
+        // Schema error detected, using alternative update method
         return this.updateAlternative(id, data);
       }
-
-      // Log detalhado do erro para debug
-      console.error('DynamoDB Update Error:', {
-        id,
-        tableName: this.tableName,
-        updateExpression,
-        expressionAttributeNames,
-        expressionAttributeValues,
-        keyProvided: { id },
-        error: error instanceof Error ? error.message : 'Unknown error',
-        errorName: error instanceof Error ? error.name : 'Unknown',
-        errorCode: 'Unknown',
-      });
 
       throw error;
     }
@@ -302,8 +246,6 @@ export class DynamoDbVideoRepository
   async updateAlternative(id: string, data: Partial<Video>): Promise<Video> {
     // Método alternativo usando PUT ao invés de UPDATE
     // Usado como fallback se o método update não funcionar
-
-    console.log(`-- Using alternative update method for video ID: ${id}`);
 
     // Buscar o vídeo existente
     const existingVideo = await this.findById(id);
@@ -330,9 +272,6 @@ export class DynamoDbVideoRepository
 
     try {
       await this.executeCommand<PutCommandOutput>(command);
-      console.log(
-        `-- Video updated successfully using alternative method: ${id}`,
-      );
       return updatedVideo;
     } catch (error) {
       console.error('DynamoDB Alternative Update Error:', {
